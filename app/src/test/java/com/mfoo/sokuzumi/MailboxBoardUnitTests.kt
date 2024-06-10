@@ -1,5 +1,6 @@
 package com.mfoo.sokuzumi
 
+import arrow.core.Either
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -53,7 +54,7 @@ class MailboxBoardUnitTests : FunSpec({
             Square(Col(x), Row(y))
         }
         for (sq in allSquares) {
-            board.getKoma(sq) shouldBe null
+            board.getKoma(sq) shouldBe Either.Right(null)
         }
     }
 
