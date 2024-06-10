@@ -1,6 +1,7 @@
 package com.mfoo.sokuzumi
 
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 
 fun HandImpl.Companion.fromList(komaAmounts: List<Pair<KomaType, Int>>): Hand {
@@ -11,9 +12,44 @@ fun HandImpl.Companion.fromList(komaAmounts: List<Pair<KomaType, Int>>): Hand {
     return hand
 }
 
-class KomaAmount(
-    val komaType: KomaType, val initial: Int, val updated: Int? = null
+val ALLOWED_HAND_PIECES = listOf(
+    KomaType.FU,
+    KomaType.KY,
+    KomaType.KE,
+    KomaType.GI,
+    KomaType.KI,
+    KomaType.KA,
+    KomaType.HI
 )
+
+sealed interface HandOperation {
+    class SetAmount(val komaType: KomaType, val amount: Int) : HandOperation
+    class Increment(val komaType: KomaType) : HandOperation
+    class Decrement(val komaType: KomaType) : HandOperation
+}
+
+fun testHand(
+    initialHandData: Map<KomaType, Int>,
+    operations: List<HandOperation>,
+    expectedHandData: Map<KomaType, Int>
+) {
+    val initialHand = initialHandData.toList().let { HandImpl.fromList(it) }
+    val finalHand = operations.fold(initialHand) { acc, op ->
+        when (op) {
+            is HandOperation.SetAmount -> acc.setAmount(
+                op.komaType, op.amount
+            )
+
+            is HandOperation.Increment -> acc.increment(op.komaType)
+            is HandOperation.Decrement -> acc.decrement(op.komaType)
+        }
+    }
+    for (komaType in ALLOWED_HAND_PIECES) {
+        val expectedAmount = expectedHandData[komaType] ?: 0
+        val actualAmount = finalHand.getAmount(komaType)
+        actualAmount shouldBe expectedAmount
+    }
+}
 
 class HandImplTests : FunSpec({
     test("Empty hand should contain nothing") {
@@ -34,101 +70,79 @@ class HandImplTests : FunSpec({
             finalHand.getAmount(komaType) shouldBe amount
         }
     }
-    test("Setting amount from A to B") {
-        val input = listOf(
-            KomaAmount(KomaType.KA, 2, 3),
-            KomaAmount(KomaType.HI, 3, 0),
-            KomaAmount(KomaType.GI, 0, 4)
-        )
-        val initialHand = input.map { komaAmount ->
-            with(komaAmount) {
-                Pair(
-                    komaType, initial
-                )
-            }
-        }.let { HandImpl.fromList(it) }
-        val finalHand = initialHand.let {
-            input.fold(it) { acc, komaAmount ->
-                with(komaAmount) {
-                    when (updated == null) {
-                        true -> acc
-                        false -> acc.setAmount(komaType, updated)
-                    }
+    context("Setting KomaType amounts") {
+        withData(
+            listOf(
+                KomaType.FU,
+                KomaType.KY,
+                KomaType.KE,
+                KomaType.GI,
+                KomaType.KI,
+                KomaType.KA,
+                KomaType.HI
+            )
+        ) { komaType ->
+            withData(listOf(0, 1, 2, 18)) { initial ->
+                withData(listOf(0, 1, 2, 18)) { final ->
+                    testHand(
+                        mapOf(komaType to initial), listOf(
+                            HandOperation.SetAmount(komaType, final)
+                        ), mapOf(komaType to final)
+                    )
                 }
             }
         }
-        for (komaAmount in input) {
-            with(komaAmount) {
-                finalHand.getAmount(komaType) shouldBe when {
-                    updated == null -> initial
-                    updated < 0 -> initial
-                    else -> updated
-                }
-            }
+        test("Setting multiple values") {
+            testHand(
+                mapOf(KomaType.KA to 2, KomaType.HI to 3, KomaType.GI to 0),
+                listOf(
+                    HandOperation.SetAmount(KomaType.KA, 3),
+                    HandOperation.SetAmount(KomaType.HI, 0),
+                    HandOperation.SetAmount(KomaType.GI, 4)
+                ),
+                mapOf(KomaType.KA to 3, KomaType.HI to 0, KomaType.GI to 4)
+            )
         }
     }
     test("Setting a negative amount should not change the hand") {
-        val input = listOf(
-            KomaAmount(KomaType.KE, 2), KomaAmount(KomaType.FU, 3, -1)
+        testHand(
+            mapOf(KomaType.KE to 2, KomaType.FU to 3),
+            listOf(HandOperation.SetAmount(KomaType.FU, -1)),
+            mapOf(KomaType.KE to 2, KomaType.FU to 3)
         )
-        val initialHand = input.map { komaAmount ->
-            with(komaAmount) {
-                Pair(
-                    komaType, initial
-                )
-            }
-        }.let { HandImpl.fromList(it) }
-        val finalHand = initialHand.let {
-            input.fold(it) { acc, komaAmount ->
-                with(komaAmount) {
-                    when (updated == null) {
-                        true -> acc
-                        false -> acc.setAmount(komaType, updated)
-                    }
-                }
-            }
-        }
-        for (komaAmount in input) {
-            with(komaAmount) {
-                finalHand.getAmount(komaType) shouldBe when {
-                    updated == null -> initial
-                    updated < 0 -> initial
-                    else -> updated
-                }
-            }
-        }
     }
-    test("Setting amount for an invalid KomaType should not change the hand") {
-        val input = listOf(KomaType.OU to 2, KomaType.RY to 3, KomaType.UM to 0)
-        val initialHand = HandImpl.empty()
-        val finalHand = initialHand.let {
-            input.fold(it) { acc, (komaType, amount) ->
-                acc.setAmount(komaType, amount)
-            }
-        }
-        for ((komaType, _) in input) {
-            finalHand.getAmount(komaType) shouldBe 0
+    context("Setting amount for an invalid KomaType should not change the hand") {
+        withData(
+            listOf(
+                KomaType.OU to 2, KomaType.RY to 3, KomaType.UM to 1
+            )
+        ) { (komaType, amount) ->
+            testHand(
+                mapOf(),
+                listOf(HandOperation.SetAmount(komaType, amount)),
+                mapOf(),
+            )
         }
     }
     test("Incrementing KomaType repeatedly") {
-        var hand = HandImpl.empty()
-        val amount = 4
-        val komaType = KomaType.FU
-        repeat(amount) { hand = hand.increment(komaType) }
-        hand.getAmount(komaType) shouldBe amount
+        testHand(
+            mapOf(),
+            List(4) { HandOperation.Increment(KomaType.FU) },
+            mapOf(KomaType.FU to 4)
+        )
     }
     test("Decrementing KomaType repeatedly") {
-        val initialAmount = 4
-        val numDecrements = 2
-        val komaType = KomaType.FU
-        var hand = HandImpl.empty().setAmount(komaType, initialAmount)
-        repeat(numDecrements) { hand = hand.decrement(komaType) }
-        hand.getAmount(komaType) shouldBe initialAmount - numDecrements
+        testHand(
+            mapOf(KomaType.FU to 4),
+            List(3) { HandOperation.Decrement(KomaType.FU) },
+            mapOf(KomaType.FU to 4 - 3)
+        )
     }
     test("Should not be able to decrement below 0") {
-        val initialHand = HandImpl.empty()
-        val komaType = KomaType.FU
-        val finalHand = initialHand.decrement(komaType)
-        finalHand.getAmount(komaType) shouldBe 0
+        testHand(
+            mapOf(KomaType.HI to 2, KomaType.KE to 0),
+            listOf(HandOperation.Decrement(KomaType.KE)),
+            mapOf(KomaType.HI to 2, KomaType.KE to 0)
+        )
     }
 })
