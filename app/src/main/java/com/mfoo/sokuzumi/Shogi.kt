@@ -18,3 +18,15 @@ enum class Side {
         val UWATE = GOTE
     }
 }
+
+/**
+ * Represents a type of shogi piece.
+ */
+enum class KomaType {
+    FU, KY, KE, GI, KI, KA, HI, OU, TO, NY, NK, NG, UM, RY
+}
+
+/**
+ * Represents a shogi piece.
+ */
+data class Koma(val side: Side, val komaType: KomaType)
