@@ -30,3 +30,17 @@ enum class KomaType {
  * Represents a shogi piece.
  */
 data class Koma(val side: Side, val komaType: KomaType)
+
+@JvmInline
+value class Row(val int: Int)
+
+@JvmInline
+value class Col(val int: Int)
+
+/**
+ * Represents a square on a shogi board.
+ *
+ * The usual convention is that the first number is the column and second is the row;
+ * the upper-right corner is 11 and the lower-left is 99.
+ */
+data class Square(val col: Col, val row: Row)
