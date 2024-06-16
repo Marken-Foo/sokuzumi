@@ -46,14 +46,14 @@ class PositionImplUnitTests : FunSpec({
     context("Position tests") {
         test("Positions with same state should be equal") {
             val arbitrarySfen =
-                Sfen("""lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1""")
+                """lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"""
             val sut1 = PositionImpl.fromSfen(arbitrarySfen)
             val sut2 = PositionImpl.fromSfen(arbitrarySfen)
             sut1 shouldBe sut2
         }
 
         test("Empty position should be equal to a default SFEN") {
-            val emptySfen = Sfen("""9/9/9/9/9/9/9/9/9 b - 1""")
+            val emptySfen = """9/9/9/9/9/9/9/9/9 b - 1"""
             val result = PositionImpl.empty()
             result shouldBe PositionImpl.fromSfen(emptySfen)
         }

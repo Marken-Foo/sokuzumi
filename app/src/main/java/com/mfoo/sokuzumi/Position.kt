@@ -2,9 +2,6 @@ package com.mfoo.sokuzumi
 
 import arrow.core.Either
 
-@JvmInline
-value class Sfen(val sfen: String)
-
 /**
  * Represents a shogi position state, equivalent to the information in an SFEN.
  */
@@ -27,12 +24,12 @@ interface Position {
     fun toggleSideToMove(): Position
 
     // SFEN functions
-    fun toSfen(): Sfen
+    fun toSfen(): String
 }
 
 interface PositionFactory {
     fun empty(): Position
-    fun fromSfen(sfen: Sfen): Position
+    fun fromSfen(sfen: String): Position
 }
 
 data class PositionImpl(
@@ -117,7 +114,7 @@ data class PositionImpl(
         return copy(sideToMove = sideToMove.switch())
     }
 
-    override fun toSfen(): Sfen {
+    override fun toSfen(): String {
         TODO("Not yet implemented")
     }
 
@@ -150,7 +147,7 @@ data class PositionImpl(
             )
         }
 
-        override fun fromSfen(sfen: Sfen): Position {
+        override fun fromSfen(sfen: String): Position {
             TODO("Not yet implemented")
         }
     }
