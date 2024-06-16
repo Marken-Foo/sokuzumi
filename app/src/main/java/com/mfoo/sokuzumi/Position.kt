@@ -17,7 +17,8 @@ interface Position {
     // Board functions
     fun getKoma(sq: Square): Koma
     fun setKoma(sq: Square, koma: Koma): Position
-    fun getAllKoma(): List<Pair<Square, Koma>>
+    fun removeKoma(sq: Square): Position
+    fun getAllKoma(): Map<Square, Koma>
 
     // Game state functions
     fun getSideToMove(): Side
@@ -93,7 +94,11 @@ data class PositionImpl(
         TODO("Not yet implemented")
     }
 
-    override fun getAllKoma(): List<Pair<Square, Koma>> {
+    override fun removeKoma(sq: Square): Position {
+        TODO("Not yet implemented")
+    }
+
+    override fun getAllKoma(): Map<Square, Koma> {
         TODO("Not yet implemented")
     }
 

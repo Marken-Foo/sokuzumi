@@ -14,6 +14,9 @@ sealed interface PositionOperation {
 
     class DecrementHand(val side: Side, val komaType: KomaType) :
         PositionOperation
+
+    class SetKoma(val sq: Square, val koma: Koma) : PositionOperation
+    class RemoveKoma(val sq: Square) : PositionOperation
 }
 
 fun operate(
@@ -32,6 +35,9 @@ fun operate(
             is PositionOperation.DecrementHand -> acc.decrementHandAmount(
                 op.side, op.komaType,
             )
+
+            is PositionOperation.SetKoma -> acc.setKoma(op.sq, op.koma)
+            is PositionOperation.RemoveKoma -> acc.removeKoma(op.sq)
         }
     }
 }
@@ -81,17 +87,11 @@ class PositionImplUnitTests : FunSpec({
 
         context("Getting hands of either player") {
             val sut = operate(
-                PositionImpl.empty(),
-                listOf(
+                PositionImpl.empty(), listOf(
                     PositionOperation.SetHandAmount(
-                        Side.SENTE,
-                        KomaType.FU,
-                        2
-                    ),
-                    PositionOperation.SetHandAmount(
-                        Side.GOTE,
-                        KomaType.HI,
-                        1
+                        Side.SENTE, KomaType.FU, 2
+                    ), PositionOperation.SetHandAmount(
+                        Side.GOTE, KomaType.HI, 1
                     )
                 )
             )
@@ -159,9 +159,82 @@ class PositionImplUnitTests : FunSpec({
         }
 
         test("Get hand amount") {
-            val sut = PositionImpl.empty().setHandAmount(Side.GOTE, KomaType.KE, 2)
+            val sut =
+                PositionImpl.empty().setHandAmount(Side.GOTE, KomaType.KE, 2)
             val result = sut.getHandAmount(Side.GOTE, KomaType.KE)
             result shouldBe 2
+        }
+    }
+
+    context("Position board tests") {
+        fun PositionImpl.Companion.fromMap(boardMap: Map<Square, Koma>): Position {
+            var position = PositionImpl.empty()
+            for ((sq, koma) in boardMap) {
+                position = position.setKoma(sq, koma)
+            }
+            return position
+        }
+
+        fun testPositionBoard(
+            initialBoardData: Map<Square, Koma>,
+            operations: List<PositionOperation>,
+            expectedBoardData: Map<Square, Koma>
+        ) {
+            val initialPosition = PositionImpl.fromMap(initialBoardData)
+            val finalPosition = operate(initialPosition, operations)
+            finalPosition shouldBe PositionImpl.fromMap(expectedBoardData)
+        }
+
+        test("Setting Koma on empty Square") {
+            val sq = Square(Col(4), Row(7))
+            val koma = Koma(Side.SENTE, KomaType.OU)
+            testPositionBoard(
+                mapOf(),
+                listOf(PositionOperation.SetKoma(sq, koma)),
+                mapOf(sq to koma)
+            )
+        }
+
+        test("Setting Koma on occupied Square") {
+            val sq = Square(Col(3), Row(6))
+            val koma1 = Koma(Side.SENTE, KomaType.OU)
+            val koma2 = Koma(Side.GOTE, KomaType.GI)
+            testPositionBoard(
+                mapOf(sq to koma1),
+                listOf(PositionOperation.SetKoma(sq, koma2)),
+                mapOf(sq to koma2)
+            )
+        }
+
+        test("Removing Koma from empty Square") {
+            val sq = Square(Col(2), Row(1))
+            testPositionBoard(
+                mapOf(), listOf(PositionOperation.RemoveKoma(sq)), mapOf()
+            )
+        }
+
+        test("Removing Koma from occupied Square") {
+            val sq = Square(Col(1), Row(2))
+            val koma = Koma(Side.SENTE, KomaType.RY)
+            testPositionBoard(
+                mapOf(sq to koma),
+                listOf(PositionOperation.RemoveKoma(sq)),
+                mapOf()
+            )
+        }
+
+        test("Get all Koma from board") {
+            val data = mapOf(
+                Square(Col(1), Row(4)) to Koma(Side.SENTE, KomaType.GI),
+                Square(Col(9), Row(7)) to Koma(Side.GOTE, KomaType.OU),
+                Square(Col(7), Row(6)) to Koma(Side.GOTE, KomaType.TO),
+            )
+            val sut = operate(
+                PositionImpl.empty(),
+                data.map { (sq, koma) -> PositionOperation.SetKoma(sq, koma) }
+            )
+            val result = sut.getAllKoma()
+            result shouldBe data
         }
     }
 })
