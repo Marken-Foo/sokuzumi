@@ -159,11 +159,9 @@ class PositionImplUnitTests : FunSpec({
         }
 
         test("Get hand amount") {
-            val arbitrarySfen =
-                Sfen("""ln1g1s2+B/2s1k1p2/p1ppp3p/5P3/6r2/2P5P/PP1PPS3/2GK5/LNS2G1+r+b w NL2Pgnl3p 64""")
-            val sut = PositionImpl.fromSfen(arbitrarySfen)
+            val sut = PositionImpl.empty().setHandAmount(Side.GOTE, KomaType.KE, 2)
             val result = sut.getHandAmount(Side.GOTE, KomaType.KE)
-            result shouldBe 1
+            result shouldBe 2
         }
     }
 })

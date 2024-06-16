@@ -32,29 +32,57 @@ interface PositionFactory {
     fun fromSfen(sfen: Sfen): Position
 }
 
-class PositionImpl() : Position {
+data class PositionImpl(
+    private val senteHand: Hand,
+    private val goteHand: Hand,
+) : Position {
     override fun getHandOfSide(side: Side): Hand {
-        TODO("Not yet implemented")
+        return when (side) {
+            Side.SENTE -> senteHand
+            Side.GOTE -> goteHand
+        }
     }
 
     override fun getHandAmount(side: Side, komaType: KomaType): Int {
-        TODO("Not yet implemented")
+        return getHandOfSide(side).getAmount(komaType)
     }
 
     override fun setHandAmount(
-        side: Side,
-        komaType: KomaType,
-        amount: Int
+        side: Side, komaType: KomaType, amount: Int
     ): Position {
-        TODO("Not yet implemented")
+        return when (side) {
+            Side.SENTE -> copy(
+                senteHand = this.getHandOfSide(side).setAmount(komaType, amount)
+            )
+
+            Side.GOTE -> copy(
+                goteHand = this.getHandOfSide(side).setAmount(komaType, amount)
+            )
+        }
     }
 
     override fun incrementHandAmount(side: Side, komaType: KomaType): Position {
-        TODO("Not yet implemented")
+        return when (side) {
+            Side.SENTE -> copy(
+                senteHand = this.getHandOfSide(side).increment(komaType)
+            )
+
+            Side.GOTE -> copy(
+                goteHand = this.getHandOfSide(side).increment(komaType)
+            )
+        }
     }
 
     override fun decrementHandAmount(side: Side, komaType: KomaType): Position {
-        TODO("Not yet implemented")
+        return when (side) {
+            Side.SENTE -> copy(
+                senteHand = this.getHandOfSide(side).decrement(komaType)
+            )
+
+            Side.GOTE -> copy(
+                goteHand = this.getHandOfSide(side).decrement(komaType)
+            )
+        }
     }
 
     override fun getKoma(sq: Square): Koma {
@@ -81,9 +109,26 @@ class PositionImpl() : Position {
         TODO("Not yet implemented")
     }
 
+    override fun equals(other: Any?): Boolean {
+        return if (other is PositionImpl) {
+            this.senteHand == other.senteHand && this.goteHand == other.goteHand
+        } else {
+            false
+        }
+    }
+
+    override fun hashCode(): Int {
+        var result = senteHand.hashCode()
+        result = 31 * result + goteHand.hashCode()
+        return result
+    }
+
     companion object : PositionFactory {
         override fun empty(): Position {
-            TODO("Not yet implemented")
+            return PositionImpl(
+                senteHand = HandImpl.empty(),
+                goteHand = HandImpl.empty()
+            )
         }
 
         override fun fromSfen(sfen: Sfen): Position {
