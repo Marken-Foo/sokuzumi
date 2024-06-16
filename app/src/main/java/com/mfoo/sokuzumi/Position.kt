@@ -39,6 +39,7 @@ data class PositionImpl(
     private val senteHand: Hand,
     private val goteHand: Hand,
     private val board: Board,
+    private val sideToMove: Side,
 ) : Position {
     override fun getHandOfSide(side: Side): Hand {
         return when (side) {
@@ -52,7 +53,7 @@ data class PositionImpl(
     }
 
     override fun setHandAmount(
-        side: Side, komaType: KomaType, amount: Int
+        side: Side, komaType: KomaType, amount: Int,
     ): Position {
         return when (side) {
             Side.SENTE -> copy(
@@ -109,11 +110,11 @@ data class PositionImpl(
     }
 
     override fun getSideToMove(): Side {
-        TODO("Not yet implemented")
+        return sideToMove
     }
 
     override fun toggleSideToMove(): Position {
-        TODO("Not yet implemented")
+        return copy(sideToMove = sideToMove.switch())
     }
 
     override fun toSfen(): Sfen {
@@ -122,7 +123,10 @@ data class PositionImpl(
 
     override fun equals(other: Any?): Boolean {
         return if (other is PositionImpl) {
-            this.senteHand == other.senteHand && this.goteHand == other.goteHand && this.board == other.board
+            this.senteHand == other.senteHand
+                && this.goteHand == other.goteHand
+                && this.board == other.board
+                && this.sideToMove == other.sideToMove
         } else {
             false
         }
@@ -132,6 +136,7 @@ data class PositionImpl(
         var result = senteHand.hashCode()
         result = 31 * result + goteHand.hashCode()
         result = 31 * result + board.hashCode()
+        result = 31 * result + sideToMove.hashCode()
         return result
     }
 
@@ -141,6 +146,7 @@ data class PositionImpl(
                 senteHand = HandImpl.empty(),
                 goteHand = HandImpl.empty(),
                 board = MailboxBoard.empty(),
+                sideToMove = Side.SENTE,
             )
         }
 
