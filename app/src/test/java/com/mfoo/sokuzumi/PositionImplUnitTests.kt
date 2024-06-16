@@ -57,6 +57,20 @@ class PositionImplUnitTests : FunSpec({
             val result = PositionImpl.empty()
             result shouldBe PositionImpl.fromSfen(emptySfen)
         }
+
+        test("Side to move of an empty Position should be sente") {
+            val sut = PositionImpl.empty()
+            val result = sut.getSideToMove()
+            result shouldBe Side.SENTE
+        }
+
+        test("Toggle side to move should change the side to move") {
+            val arbitraryPosition = PositionImpl.empty()
+            val sut = arbitraryPosition.toggleSideToMove()
+            val result = sut.getSideToMove()
+            val expectedSide = arbitraryPosition.getSideToMove().switch()
+            result shouldBe expectedSide
+        }
     }
 
     context("Position hand tests") {

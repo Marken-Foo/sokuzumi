@@ -24,7 +24,7 @@ interface Position {
 
     // Game state functions
     fun getSideToMove(): Side
-    fun toggleSideToMove(): Side
+    fun toggleSideToMove(): Position
 
     // SFEN functions
     fun toSfen(): Sfen
@@ -112,7 +112,7 @@ data class PositionImpl(
         TODO("Not yet implemented")
     }
 
-    override fun toggleSideToMove(): Side {
+    override fun toggleSideToMove(): Position {
         TODO("Not yet implemented")
     }
 
