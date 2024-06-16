@@ -43,4 +43,10 @@ value class Col(val int: Int)
  * The usual convention is that the first number is the column and second is the row;
  * the upper-right corner is 11 and the lower-left is 99.
  */
-data class Square(val col: Col, val row: Row)
+data class Square(val col: Col, val row: Row) {
+    companion object {
+        fun all(): Iterable<Square> = (1..9).flatMap { x ->
+            (1..9).map { y -> Square(Col(x), Row(y)) }
+        }
+    }
+}

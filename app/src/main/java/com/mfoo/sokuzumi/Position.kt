@@ -1,5 +1,7 @@
 package com.mfoo.sokuzumi
 
+import arrow.core.Either
+
 @JvmInline
 value class Sfen(val sfen: String)
 
@@ -15,7 +17,7 @@ interface Position {
     fun decrementHandAmount(side: Side, komaType: KomaType): Position
 
     // Board functions
-    fun getKoma(sq: Square): Koma
+    fun getKoma(sq: Square): Either<Unit, Koma?>
     fun setKoma(sq: Square, koma: Koma): Position
     fun removeKoma(sq: Square): Position
     fun getAllKoma(): Map<Square, Koma>
@@ -36,6 +38,7 @@ interface PositionFactory {
 data class PositionImpl(
     private val senteHand: Hand,
     private val goteHand: Hand,
+    private val board: Board,
 ) : Position {
     override fun getHandOfSide(side: Side): Hand {
         return when (side) {
@@ -86,20 +89,23 @@ data class PositionImpl(
         }
     }
 
-    override fun getKoma(sq: Square): Koma {
-        TODO("Not yet implemented")
+    override fun getKoma(sq: Square): Either<Unit, Koma?> {
+        return board.getKoma(sq)
     }
 
     override fun setKoma(sq: Square, koma: Koma): Position {
-        TODO("Not yet implemented")
+        return copy(board = board.setKoma(sq, koma))
     }
 
     override fun removeKoma(sq: Square): Position {
-        TODO("Not yet implemented")
+        return copy(board = board.removeKoma(sq))
     }
 
     override fun getAllKoma(): Map<Square, Koma> {
-        TODO("Not yet implemented")
+        return Square.all().mapNotNull { sq ->
+            val koma = board.getKoma(sq).getOrNull()
+            if (koma != null) Pair(sq, koma) else null
+        }.toMap()
     }
 
     override fun getSideToMove(): Side {
@@ -116,7 +122,7 @@ data class PositionImpl(
 
     override fun equals(other: Any?): Boolean {
         return if (other is PositionImpl) {
-            this.senteHand == other.senteHand && this.goteHand == other.goteHand
+            this.senteHand == other.senteHand && this.goteHand == other.goteHand && this.board == other.board
         } else {
             false
         }
@@ -125,6 +131,7 @@ data class PositionImpl(
     override fun hashCode(): Int {
         var result = senteHand.hashCode()
         result = 31 * result + goteHand.hashCode()
+        result = 31 * result + board.hashCode()
         return result
     }
 
@@ -132,7 +139,8 @@ data class PositionImpl(
         override fun empty(): Position {
             return PositionImpl(
                 senteHand = HandImpl.empty(),
-                goteHand = HandImpl.empty()
+                goteHand = HandImpl.empty(),
+                board = MailboxBoard.empty(),
             )
         }
 

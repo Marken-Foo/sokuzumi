@@ -50,9 +50,7 @@ class MailboxBoardUnitTests : FunSpec({
     }
     test("Empty board should contain nothing") {
         val board = MailboxBoard.empty()
-        val allSquares = (1..9).zip(1..9).map { (x, y) ->
-            Square(Col(x), Row(y))
-        }
+        val allSquares = Square.all()
         for (sq in allSquares) {
             board.getKoma(sq) shouldBe Either.Right(null)
         }
