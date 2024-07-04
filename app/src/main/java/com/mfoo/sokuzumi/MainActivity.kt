@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -26,7 +28,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
 import com.mfoo.sokuzumi.ui.theme.SokuzumiTheme
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,16 +41,57 @@ class MainActivity : ComponentActivity() {
         setContent {
             SokuzumiTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Board(Modifier.padding(innerPadding))
+                    Board(PositionViewModel(), Modifier.padding(innerPadding))
                 }
             }
         }
     }
 }
 
+data class KomaOnBoard(
+    val komaType: KomaType,
+    val x: Int,
+    val y: Int,
+    val isUpsideDown: Boolean,
+)
+
+data class BoardState(
+    val komas: List<KomaOnBoard>,
+)
+
+// For Android lifecycle persistence across configuration change
+class PositionViewModel : ViewModel() {
+    private val _vm = PositionVM()
+    private val _uiState = MutableStateFlow(_vm.calculateVm(_vm.pos))
+    val uiState: StateFlow<BoardState> = _uiState.asStateFlow()
+}
+
+// Actual ViewModel in the app
+class PositionVM {
+    val pos: Position = PositionImpl.empty()
+        .setKoma(Square(Col(1), Row(1)), Koma(Side.GOTE, KomaType.KY))
+        .setKoma(Square(Col(1), Row(3)), Koma(Side.GOTE, KomaType.FU))
+        .setKoma(Square(Col(5), Row(9)), Koma(Side.SENTE, KomaType.OU))
+        .setKoma(Square(Col(8), Row(8)), Koma(Side.SENTE, KomaType.KA))
+
+    private fun squareToXY(sq: Square): Pair<Int, Int> {
+        val numCols = 9
+        return Pair(numCols - sq.col.int, sq.row.int - 1)
+    }
+
+    fun calculateVm(position: Position): BoardState {
+        val allKomas = position.getAllKoma().map { (sq, koma) ->
+            val (x, y) = squareToXY(sq)
+            KomaOnBoard(koma.komaType, x, y, !koma.side.isSente())
+        }
+        return BoardState(allKomas)
+    }
+}
+
 // Contains just the (9x9) shogi board and komas on it
 @Composable
-fun Board(modifier: Modifier = Modifier) {
+fun Board(positionViewModel: PositionViewModel, modifier: Modifier = Modifier) {
+    val positionUiState by positionViewModel.uiState.collectAsState()
     val lineThickness = 1.dp
     BoxWithConstraints(modifier = modifier.aspectRatio(11f / 12)) {
         val numCols = 9
@@ -72,22 +119,17 @@ fun Board(modifier: Modifier = Modifier) {
             ) { lineThickness.toPx() },
             Modifier.size(boardWidth, boardHeight)
         )
-        Koma(
-            KomaType.KE,
-            true,
-            modifier = Modifier
-                .width(sqWidth)
-                .height(sqHeight)
-                .offset(sqX(7), sqY(7))
-        )
-        Koma(
-            KomaType.NG,
-            false,
-            modifier = Modifier
-                .width(sqWidth)
-                .height(sqHeight)
-                .offset(sqX(1), sqY(2))
-        )
+
+        for (k in positionUiState.komas) {
+            Koma(
+                k.komaType,
+                k.isUpsideDown,
+                modifier = Modifier
+                    .width(sqWidth)
+                    .height(sqHeight)
+                    .offset(sqX(k.x), sqY(k.y))
+            )
+        }
     }
 }
 
@@ -202,5 +244,5 @@ fun BoardBackground(
 @Preview(showBackground = true)
 @Composable
 fun BoardPreview() {
-    Board()
+    Board(PositionViewModel())
 }
