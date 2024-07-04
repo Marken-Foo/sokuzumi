@@ -29,6 +29,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import com.mfoo.shogi.Col
+import com.mfoo.shogi.KomaType
+import com.mfoo.shogi.Position
+import com.mfoo.shogi.PositionImpl
+import com.mfoo.shogi.Row
+import com.mfoo.shogi.Side
+import com.mfoo.shogi.Square
 import com.mfoo.sokuzumi.ui.theme.SokuzumiTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -69,10 +76,22 @@ class PositionViewModel : ViewModel() {
 // Actual ViewModel in the app
 class PositionVM {
     val pos: Position = PositionImpl.empty()
-        .setKoma(Square(Col(1), Row(1)), Koma(Side.GOTE, KomaType.KY))
-        .setKoma(Square(Col(1), Row(3)), Koma(Side.GOTE, KomaType.FU))
-        .setKoma(Square(Col(5), Row(9)), Koma(Side.SENTE, KomaType.OU))
-        .setKoma(Square(Col(8), Row(8)), Koma(Side.SENTE, KomaType.KA))
+        .setKoma(
+            Square(Col(1), Row(1)),
+            com.mfoo.shogi.Koma(Side.GOTE, KomaType.KY)
+        )
+        .setKoma(
+            Square(Col(1), Row(3)),
+            com.mfoo.shogi.Koma(Side.GOTE, KomaType.FU)
+        )
+        .setKoma(
+            Square(Col(5), Row(9)),
+            com.mfoo.shogi.Koma(Side.SENTE, KomaType.OU)
+        )
+        .setKoma(
+            Square(Col(8), Row(8)),
+            com.mfoo.shogi.Koma(Side.SENTE, KomaType.KA)
+        )
 
     private fun squareToXY(sq: Square): Pair<Int, Int> {
         val numCols = 9

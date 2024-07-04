@@ -1,4 +1,4 @@
-package com.mfoo.sokuzumi
+package com.mfoo.shogi
 
 import arrow.core.Either
 

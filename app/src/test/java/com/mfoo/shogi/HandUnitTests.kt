@@ -1,5 +1,8 @@
-package com.mfoo.sokuzumi
+package com.mfoo.shogi
 
+import com.mfoo.shogi.Hand
+import com.mfoo.shogi.HandImpl
+import com.mfoo.shogi.KomaType
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe

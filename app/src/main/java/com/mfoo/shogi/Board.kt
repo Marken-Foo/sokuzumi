@@ -1,4 +1,4 @@
-package com.mfoo.sokuzumi
+package com.mfoo.shogi
 
 import arrow.core.Either
 
@@ -31,7 +31,7 @@ class MailboxBoard private constructor(
 ) : Board {
     sealed interface MailboxContent {
         @JvmInline
-        value class Koma(val value: com.mfoo.sokuzumi.Koma) : MailboxContent
+        value class Koma(val value: com.mfoo.shogi.Koma) : MailboxContent
         data object Empty : MailboxContent
         data object Invalid : MailboxContent
     }
@@ -76,7 +76,7 @@ class MailboxBoard private constructor(
             val mailbox =
                 MutableList(NUM_COLS * NUM_ROWS) { MailboxContent.Empty }
             (1..9).zip(1..9).map { (x, y) -> Square(Col(x), Row(y)) }
-                .map(::indexFromSq)
+                .map(Companion::indexFromSq)
                 .forEach { idx -> mailbox.set(idx, MailboxContent.Empty) }
             return MailboxBoard(mailbox)
         }
