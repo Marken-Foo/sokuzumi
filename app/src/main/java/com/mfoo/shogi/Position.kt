@@ -1,6 +1,7 @@
 package com.mfoo.shogi
 
 import arrow.core.Either
+import com.mfoo.shogi.sfen.parseSfen
 
 /**
  * Represents a shogi position state, equivalent to the information in an SFEN.
@@ -29,7 +30,7 @@ interface Position {
 
 interface PositionFactory {
     fun empty(): Position
-    fun fromSfen(sfen: String): Position
+    fun fromSfen(sfen: String): Position?
 }
 
 data class PositionImpl(
@@ -147,8 +148,36 @@ data class PositionImpl(
             )
         }
 
-        override fun fromSfen(sfen: String): Position {
-            TODO("Not yet implemented")
+        override fun fromSfen(sfen: String): Position? {
+            val sfenTree = parseSfen(sfen) ?: return null
+            return empty()
+                .let {
+                    var pos = it
+                    for ((rowIdx, row) in sfenTree.board.rows.withIndex()) {
+                        for ((colIdx, koma) in row.komas.withIndex()) {
+                            if (koma == null) continue;
+                            val sq = Square(Col(9 - colIdx), Row(rowIdx + 1))
+                            pos = pos.setKoma(sq, koma)
+                        }
+                    }
+                    pos
+                }
+                .let {
+                    var pos = it
+                    for ((komaType, amount) in sfenTree.senteHand.contents) {
+                        pos = pos.setHandAmount(Side.SENTE, komaType, amount)
+                    }
+                    for ((komaType, amount) in sfenTree.goteHand.contents) {
+                        pos = pos.setHandAmount(Side.GOTE, komaType, amount)
+                    }
+                    pos
+                }
+                .let {
+                    if (sfenTree.sideToMove.isSente()) {
+                        it
+                    } else
+                        it.toggleSideToMove()
+                }
         }
     }
 }

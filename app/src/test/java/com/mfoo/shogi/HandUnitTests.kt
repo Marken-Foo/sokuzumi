@@ -1,8 +1,5 @@
 package com.mfoo.shogi
 
-import com.mfoo.shogi.Hand
-import com.mfoo.shogi.HandImpl
-import com.mfoo.shogi.KomaType
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
@@ -34,7 +31,7 @@ sealed interface HandOperation {
 fun testHand(
     initialHandData: Map<KomaType, Int>,
     operations: List<HandOperation>,
-    expectedHandData: Map<KomaType, Int>
+    expectedHandData: Map<KomaType, Int>,
 ) {
     val initialHand = initialHandData.toList().let { HandImpl.fromList(it) }
     val finalHand = operations.fold(initialHand) { acc, op ->

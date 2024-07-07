@@ -5,37 +5,6 @@ import com.mfoo.shogi.KomaType
 import com.mfoo.shogi.Side
 
 sealed interface SfenAst {
-    //    enum class KomaType : SfenAst {
-//        FU, KY, KE, GI, KI, KA, HI, OU, TO, NY, NK, NG, UM, RY;
-//    }
-//
-//    enum class Side : SfenAst { SENTE, GOTE }
-//
-//    data class Koma(val side: Side, val komaType: KomaType) {
-//        fun toCsa(): String {
-//            val sideChar = when (side) {
-//                Side.SENTE -> '+'
-//                Side.GOTE -> '-'
-//            }
-//            val komaStr = when (komaType) {
-//                KomaType.FU -> "FU"
-//                KomaType.KY -> "KY"
-//                KomaType.KE -> "KE"
-//                KomaType.GI -> "GI"
-//                KomaType.KI -> "KI"
-//                KomaType.KA -> "KA"
-//                KomaType.HI -> "HI"
-//                KomaType.OU -> "OU"
-//                KomaType.TO -> "TO"
-//                KomaType.NY -> "NY"
-//                KomaType.NK -> "NK"
-//                KomaType.NG -> "NG"
-//                KomaType.UM -> "UM"
-//                KomaType.RY -> "RY"
-//            }
-//            return "${sideChar}${komaStr}"
-//        }
-//    }
     fun Koma.toCsa(): String {
         val sideChar = when (side) {
             Side.SENTE -> '+'
