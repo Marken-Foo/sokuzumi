@@ -1,5 +1,9 @@
 package com.mfoo.shogi.sfen
 
+import com.mfoo.shogi.Koma
+import com.mfoo.shogi.KomaType
+import com.mfoo.shogi.Side
+
 private fun main() {
     val res = parseSfen("7r1/6B1p/6Bsk/9/7P1/9/9/5+P+p2/8N w 2Sr4gs3n4l14p 1")
     println(res)
@@ -19,8 +23,8 @@ fun parseSfen(input: String): SfenAst.ShogiPosition? {
 
     val board = parseBoard(boardPart)
     val turn = when (turnPart) {
-        "b" -> SfenAst.Side.SENTE
-        "w" -> SfenAst.Side.GOTE
+        "b" -> Side.SENTE
+        "w" -> Side.GOTE
         else -> null
     }
     val hands = parseHands(handsPart)
@@ -50,7 +54,7 @@ private val boardPattern =
         .map { (name, pattern) -> """(?<${name}>${pattern})""" }
         .joinToString("|")
 
-private fun parseBoardItems(match: MatchResult): List<SfenAst.Koma?> {
+private fun parseBoardItems(match: MatchResult): List<Koma?> {
     return if (match.groups["Char"] != null) {
         val c = match.groups["Char"]?.value?.get(0) ?: Char.MIN_VALUE
         listOf(toKoma(c))
@@ -82,7 +86,7 @@ private fun parseBoard(input: String): SfenAst.Board {
 
 private const val handPattern = """(?<Amount>[1-9][0-9]*)?(?<Koma>[a-zA-Z])"""
 
-private fun parseHandItem(match: MatchResult): Pair<SfenAst.Koma, Int>? {
+private fun parseHandItem(match: MatchResult): Pair<Koma, Int>? {
     val amount = match.groups["Amount"]?.value?.toIntOrNull() ?: 1
     val koma = match.groups["Koma"]?.value?.firstOrNull()?.let(::toKoma)
     return koma?.let { Pair(it, amount) }
@@ -98,7 +102,7 @@ private fun parseHands(input: String): SfenAst.Hands {
     val (senteContents, goteContents) = input
         .let { Regex(handPattern).findAll(it).map(::parseHandItem) }
         .filterNotNull()
-        .partition { (koma, _) -> koma.side == SfenAst.Side.SENTE }
+        .partition { (koma, _) -> koma.side.isSente() }
     val senteHand = senteContents
         .associate { (k, amount) -> k.komaType to amount }
         .let { SfenAst.Hand(it) }
@@ -108,34 +112,34 @@ private fun parseHands(input: String): SfenAst.Hands {
     return SfenAst.Hands(senteHand = senteHand, goteHand = goteHand)
 }
 
-private fun toKoma(char: Char): SfenAst.Koma? {
+private fun toKoma(char: Char): Koma? {
     val side =
-        if (char.isLowerCase()) SfenAst.Side.GOTE else SfenAst.Side.SENTE
+        if (char.isLowerCase()) Side.GOTE else Side.SENTE
     val komaType = when (char.uppercaseChar()) {
-        'P' -> SfenAst.KomaType.FU
-        'L' -> SfenAst.KomaType.KY
-        'N' -> SfenAst.KomaType.KE
-        'S' -> SfenAst.KomaType.GI
-        'G' -> SfenAst.KomaType.KI
-        'B' -> SfenAst.KomaType.KA
-        'R' -> SfenAst.KomaType.HI
-        'K' -> SfenAst.KomaType.OU
+        'P' -> KomaType.FU
+        'L' -> KomaType.KY
+        'N' -> KomaType.KE
+        'S' -> KomaType.GI
+        'G' -> KomaType.KI
+        'B' -> KomaType.KA
+        'R' -> KomaType.HI
+        'K' -> KomaType.OU
         else -> null
     }
-    return komaType?.let { SfenAst.Koma(side, it) }
+    return komaType?.let { Koma(side, it) }
 }
 
-private fun toPromotedKoma(char: Char): SfenAst.Koma? {
+private fun toPromotedKoma(char: Char): Koma? {
     val side =
-        if (char.isLowerCase()) SfenAst.Side.GOTE else SfenAst.Side.SENTE
+        if (char.isLowerCase()) Side.GOTE else Side.SENTE
     val komaType = when (char.uppercaseChar()) {
-        'P' -> SfenAst.KomaType.TO
-        'L' -> SfenAst.KomaType.NY
-        'N' -> SfenAst.KomaType.NK
-        'S' -> SfenAst.KomaType.NG
-        'B' -> SfenAst.KomaType.UM
-        'R' -> SfenAst.KomaType.RY
+        'P' -> KomaType.TO
+        'L' -> KomaType.NY
+        'N' -> KomaType.NK
+        'S' -> KomaType.NG
+        'B' -> KomaType.UM
+        'R' -> KomaType.RY
         else -> null
     }
-    return komaType?.let { SfenAst.Koma(side, it) }
+    return komaType?.let { Koma(side, it) }
 }

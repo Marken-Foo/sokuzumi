@@ -1,11 +1,11 @@
 package com.mfoo.shogi.sfen
 
+import com.mfoo.shogi.Koma
+import com.mfoo.shogi.KomaType
+import com.mfoo.shogi.Side
 import com.mfoo.shogi.sfen.SfenAst.Board
 import com.mfoo.shogi.sfen.SfenAst.Hand
-import com.mfoo.shogi.sfen.SfenAst.Koma
-import com.mfoo.shogi.sfen.SfenAst.KomaType
 import com.mfoo.shogi.sfen.SfenAst.Row
-import com.mfoo.shogi.sfen.SfenAst.Side
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
