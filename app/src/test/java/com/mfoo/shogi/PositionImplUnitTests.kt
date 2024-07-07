@@ -1,21 +1,12 @@
 package com.mfoo.shogi
 
-import com.mfoo.shogi.Col
-import com.mfoo.shogi.HandImpl
-import com.mfoo.shogi.Koma
-import com.mfoo.shogi.KomaType
-import com.mfoo.shogi.Position
-import com.mfoo.shogi.PositionImpl
-import com.mfoo.shogi.Row
-import com.mfoo.shogi.Side
-import com.mfoo.shogi.Square
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 
 sealed interface PositionOperation {
     class SetHandAmount(
-        val side: Side, val komaType: KomaType, val amount: Int
+        val side: Side, val komaType: KomaType, val amount: Int,
     ) : PositionOperation
 
     class IncrementHand(val side: Side, val komaType: KomaType) :
@@ -29,7 +20,7 @@ sealed interface PositionOperation {
 }
 
 fun operate(
-    initialPosition: Position, operations: List<PositionOperation>
+    initialPosition: Position, operations: List<PositionOperation>,
 ): Position {
     return operations.fold(initialPosition) { acc, op ->
         when (op) {
@@ -84,7 +75,7 @@ class PositionImplUnitTests : FunSpec({
 
     context("Position hand tests") {
         data class HandKomaData(
-            val side: Side, val komaType: KomaType, val amount: Int
+            val side: Side, val komaType: KomaType, val amount: Int,
         )
 
         val sides = listOf(Side.SENTE, Side.GOTE)
@@ -201,7 +192,7 @@ class PositionImplUnitTests : FunSpec({
         fun testPositionBoard(
             initialBoardData: Map<Square, Koma>,
             operations: List<PositionOperation>,
-            expectedBoardData: Map<Square, Koma>
+            expectedBoardData: Map<Square, Koma>,
         ) {
             val initialPosition = PositionImpl.fromMap(initialBoardData)
             val finalPosition = operate(initialPosition, operations)

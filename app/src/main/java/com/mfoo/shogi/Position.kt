@@ -23,9 +23,6 @@ interface Position {
     // Game state functions
     fun getSideToMove(): Side
     fun toggleSideToMove(): Position
-
-    // SFEN functions
-    fun toSfen(): String
 }
 
 interface PositionFactory {
@@ -113,10 +110,6 @@ data class PositionImpl(
 
     override fun toggleSideToMove(): Position {
         return copy(sideToMove = sideToMove.switch())
-    }
-
-    override fun toSfen(): String {
-        TODO("Not yet implemented")
     }
 
     override fun equals(other: Any?): Boolean {
