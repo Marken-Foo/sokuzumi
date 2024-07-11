@@ -21,6 +21,10 @@ class HandImpl private constructor(
         return amounts.hashCode()
     }
 
+    override fun toString(): String {
+        return this.amounts.toString()
+    }
+
     override fun getAmount(komaType: KomaType): Int =
         this.amounts[komaType] ?: 0
 

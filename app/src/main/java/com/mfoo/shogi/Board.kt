@@ -27,7 +27,7 @@ interface BoardFactory {
  * e.g. the shogi 11 square has index 31, the shogi 12 square has index 42, etc.
  */
 class MailboxBoard private constructor(
-    val mailbox: List<MailboxContent>
+    val mailbox: List<MailboxContent>,
 ) : Board {
     sealed interface MailboxContent {
         @JvmInline
@@ -67,6 +67,24 @@ class MailboxBoard private constructor(
 
     override fun hashCode(): Int {
         return this.mailbox.hashCode()
+    }
+
+    override fun toString(): String {
+        val boardSquares = (1..9).map { y ->
+            (9 downTo 1).map { x -> Square(Col(x), Row(y)) }
+        }
+        return "\n" + boardSquares.joinToString("\n") { row ->
+            row
+                .map(Companion::indexFromSq)
+                .map { idx -> mailbox[idx] }
+                .joinToString(",") { content ->
+                    when (content) {
+                        is MailboxContent.Invalid -> ""
+                        is MailboxContent.Empty -> " . "
+                        is MailboxContent.Koma -> content.value.toCsa()
+                    }
+                }
+        }
     }
 
     companion object : BoardFactory {
