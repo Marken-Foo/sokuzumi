@@ -1,6 +1,7 @@
 package com.mfoo.shogi
 
 import arrow.core.Either
+import com.mfoo.shogi.bod.BodAst
 import com.mfoo.shogi.sfen.parseSfen
 
 /**
@@ -28,6 +29,7 @@ interface Position {
 interface PositionFactory {
     fun empty(): Position
     fun fromSfen(sfen: String): Position?
+    fun fromBodAst(bodPosition: BodAst.Position): Position?
 }
 
 data class PositionImpl(
@@ -168,8 +170,34 @@ data class PositionImpl(
                 .let {
                     if (sfenTree.sideToMove.isSente()) {
                         it
-                    } else
+                    } else {
                         it.toggleSideToMove()
+                    }
+                }
+        }
+
+        override fun fromBodAst(bodPosition: BodAst.Position): Position {
+            return empty()
+                .let {
+                    var pos = it
+                    for ((rowIdx, row) in bodPosition.board.rows.withIndex()) {
+                        for ((colIdx, koma) in row.komas.withIndex()) {
+                            if (koma == null) continue;
+                            val sq = Square(Col(9 - colIdx), Row(rowIdx + 1))
+                            pos = pos.setKoma(sq, koma)
+                        }
+                    }
+                    pos
+                }
+                .let {
+                    var pos = it
+                    for ((komaType, amount) in bodPosition.senteHand.contents) {
+                        pos = pos.setHandAmount(Side.SENTE, komaType, amount)
+                    }
+                    for ((komaType, amount) in bodPosition.goteHand.contents) {
+                        pos = pos.setHandAmount(Side.GOTE, komaType, amount)
+                    }
+                    pos
                 }
         }
     }

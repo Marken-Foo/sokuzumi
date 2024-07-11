@@ -1,4 +1,4 @@
-package com.mfoo.shogi
+package com.mfoo.shogi.kif
 
 import java.io.BufferedReader
 import java.io.File
@@ -35,9 +35,9 @@ private object KifRegex {
     private const val moveBody = """(?<MoveBody>[　\S]+)"""
     private const val moveTime = """(?<MoveTime>\d+:\d{2})"""
     private const val totalTime = """(?<TotalTime>\d+:\d{2}:\d{2})"""
-    private const val moveTimes = """\(\s*${moveTime}\s*/\s*${totalTime}\s*\)"""
+    private const val moveTimes = """\(\s*$moveTime\s*/\s*$totalTime\s*\)"""
     private const val moveLineStr =
-        "^[ \\t]*${moveNum}[ \\t]*${moveBody}[ \\t]*(?:${moveTimes})?[ \\t]*$"
+        "^[ \\t]*$moveNum[ \\t]*$moveBody[ \\t]*(?:$moveTimes)?[ \\t]*$"
     val moveLine = moveLineStr.toRegex()
 }
 

@@ -2,7 +2,6 @@ package com.mfoo.shogi.bod
 
 import com.mfoo.shogi.Koma
 import com.mfoo.shogi.KomaType
-import com.mfoo.shogi.sfen.SfenAst
 
 sealed interface BodAst {
     data class Row(val komas: List<Koma?>) : BodAst {
