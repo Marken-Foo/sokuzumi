@@ -6,7 +6,6 @@ import java.nio.charset.Charset
 
 sealed interface Token {
     data class Handicap(val name: String) : Token
-    data class BodLine(val string: String) : Token
     data class Bod(val lines: List<String>) : Token
     data object MoveSectionDelineation : Token
     data class MoveLine(
@@ -94,15 +93,9 @@ fun tokeniseLine(input: String): Token {
     KifRegex.handicap
         .matchAt(input, 0)
         ?.let { return Token.Handicap(it.groups["Handicap"]?.value ?: "") }
-
-    val bodMatch = KifRegex.bodStart.matchAt(input, 0)
-    if (bodMatch != null) {
-        return Token.BodLine(input)
-    }
     KifRegex.moveSectionDelineation
         .matchAt(input, 0)
         ?.let { return Token.MoveSectionDelineation }
-
     KifRegex.variation
         .matchAt(input, 0)
         ?.let {
@@ -110,7 +103,6 @@ fun tokeniseLine(input: String): Token {
                 it.groups["MoveNum"]?.value?.toIntOrNull() ?: Int.MAX_VALUE
             )
         }
-
     KifRegex.headerKeyValuePair
         .matchAt(input, 0)
         ?.let {
