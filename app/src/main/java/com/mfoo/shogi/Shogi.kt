@@ -29,7 +29,34 @@ enum class KomaType {
 /**
  * Represents a shogi piece.
  */
-data class Koma(val side: Side, val komaType: KomaType)
+data class Koma(val side: Side, val komaType: KomaType) {
+    // Returns the CSA string representation of the koma. See the CSA spec.
+    // Japanese: http://www2.computer-shogi.org/protocol/record_v22.html
+    // English translation: https://github.com/Marken-Foo/shogi-translations/blob/main/CSA-standard.md
+    fun toCsa(): String {
+        val sideChar = when (side) {
+            Side.SENTE -> '+'
+            Side.GOTE -> '-'
+        }
+        val komaStr = when (komaType) {
+            KomaType.FU -> "FU"
+            KomaType.KY -> "KY"
+            KomaType.KE -> "KE"
+            KomaType.GI -> "GI"
+            KomaType.KI -> "KI"
+            KomaType.KA -> "KA"
+            KomaType.HI -> "HI"
+            KomaType.OU -> "OU"
+            KomaType.TO -> "TO"
+            KomaType.NY -> "NY"
+            KomaType.NK -> "NK"
+            KomaType.NG -> "NG"
+            KomaType.UM -> "UM"
+            KomaType.RY -> "RY"
+        }
+        return "${sideChar}${komaStr}"
+    }
+}
 
 @JvmInline
 value class Row(val int: Int)
