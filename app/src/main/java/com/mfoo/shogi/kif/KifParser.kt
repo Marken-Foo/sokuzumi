@@ -153,6 +153,8 @@ private fun parseVariation(input: ParseState): ParseResult<Variation?> {
         return ParseResult(null, input)
     }
     val (moveList, state) = parseMoveSequence(input.advance())
+    assert(moveList.isNotEmpty())
+    assert(moveList[0].moveNum == token.moveNum)
     return ParseResult(Variation(token.moveNum, moveList), state)
 }
 
@@ -160,8 +162,6 @@ private fun makeMoveTree(
     mainMoves: List<KifAst.Move>,
     variationList: List<Variation>,
 ): KifAst.RootNode? {
-    // parse the lists backwards - LIFO, to construct the tree from leaves towards root
-    // better yet use deque to help this along
     if (mainMoves.isEmpty()) {
         return null
     }
@@ -169,10 +169,13 @@ private fun makeMoveTree(
     val allVariations = ArrayDeque(variationList)
     allVariations.addFirst(mainVariation)
 
-    var moveNum = Int.MIN_VALUE
+    var lastBranchMoveNum = Int.MIN_VALUE
     var branches: BranchNodes = mutableMapOf()
-    for (variation in allVariations.reversed()) {
-        if (variation.moveNum < moveNum) {
+    for (i in allVariations.indices.max() downTo 0) {
+        val variation = allVariations[i]
+
+        var node: KifAst.MoveNode? = null
+        if (variation.moveNum < lastBranchMoveNum) {
             // the current variation contains some previously parsed variations
             val applicableBranches = branches
                 .filter { (n, _) -> n > variation.moveNum }
@@ -181,29 +184,20 @@ private fun makeMoveTree(
                 .filterNot { (n, _) -> n > variation.moveNum }
                 .toMutableMap()
             branches = remainingBranches
-
-            val node = makeVariationNodes(variation, applicableBranches)
-            node?.let {
-                val deque = branches[variation.moveNum]
-                if (deque == null) {
-                    branches[variation.moveNum] = ArrayDeque(listOf(it))
-                } else {
-                    deque.addFirst(it)
-                }
-            }
+            node = makeVariationNodes(variation, applicableBranches)
         } else {
-            // the current variation can be constructed independently
-            val node = makeVariationNodes(variation)
-            node?.let {
-                val deque = branches[variation.moveNum]
-                if (deque == null) {
-                    branches[variation.moveNum] = ArrayDeque(listOf(it))
-                } else {
-                    deque.addFirst(it)
-                }
+            node = makeVariationNodes(variation)
+        }
+        node?.let {
+            val deque = branches[variation.moveNum]
+            if (deque == null) {
+                branches[variation.moveNum] = ArrayDeque(listOf(it))
+            } else {
+                deque.addFirst(it)
             }
         }
-        moveNum = variation.moveNum
+
+        lastBranchMoveNum = variation.moveNum
     }
     assert(branches.size <= 1)
     if (branches.size == 1) {
@@ -216,19 +210,11 @@ typealias BranchNodes = MutableMap<Int, ArrayDeque<KifAst.MoveNode>>
 
 private fun makeVariationNodes(
     variation: Variation,
-    branches: BranchNodes,
+    branches: BranchNodes = mutableMapOf(),
 ): KifAst.MoveNode? {
     return variation.moveList.foldRight<KifAst.Move, KifAst.MoveNode?>(null) { move, acc ->
         val children = branches[move.moveNum + 1] ?: ArrayDeque()
         acc?.let { children.addFirst(acc) }
-        KifAst.MoveNode(children, move)
-    }
-}
-
-// Make a single chain of MoveNodes for a variation
-private fun makeVariationNodes(variation: Variation): KifAst.MoveNode? {
-    return variation.moveList.foldRight<KifAst.Move, KifAst.MoveNode?>(null) { move, acc ->
-        val children = acc?.let { listOf(it) } ?: listOf()
         KifAst.MoveNode(children, move)
     }
 }
