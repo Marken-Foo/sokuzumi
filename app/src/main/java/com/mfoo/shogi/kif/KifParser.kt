@@ -36,7 +36,7 @@ private val SfenFromHandicap = mapOf(
     "十枚落ち" to "4k4/9/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL w - 1"
 )
 
-private data class GameInformation(
+private class GameInformation(
     val headers: List<KifAst.Header>,
     val startPosition: Position,
 )
@@ -82,6 +82,15 @@ private fun parseGameInformation(input: ParseState): ParseResult<GameInformation
     )
 }
 
+private fun parseMainMoveSection(input: ParseState): ParseResult<List<KifAst.Move>> {
+    var state = input
+    if (state.peek() is Token.MoveSectionDelineation) {
+        state = state.advance()
+    }
+    val (moveList, endState) = parseMoveSequence(state)
+    return ParseResult(moveList, endState)
+}
+
 private fun parseMoveSequence(input: ParseState): ParseResult<List<KifAst.Move>> {
     var state = input
     var token = state.peek()
@@ -125,18 +134,41 @@ private fun parseMoveSequence(input: ParseState): ParseResult<List<KifAst.Move>>
     return ParseResult(moveList, state)
 }
 
+private class Variation(val moveNum: Int, val moveList: List<KifAst.Move>)
+
+private fun parseVariationSection(input: ParseState): ParseResult<List<Variation>> {
+    var state = input
+    val variations = mutableListOf<Variation?>()
+    while (state.peek() is Token.VariationStart) {
+        val (variation, nextState) = parseVariation(state)
+        variations.add(variation)
+        state = nextState
+    }
+    return ParseResult(variations.filterNotNull(), state)
+}
+
+private fun parseVariation(input: ParseState): ParseResult<Variation?> {
+    val token = input.peek()
+    if (token !is Token.VariationStart) {
+        return ParseResult(null, input)
+    }
+    val (moveList, state) = parseMoveSequence(input.advance())
+    return ParseResult(Variation(token.moveNum, moveList), state)
+}
+
 fun main() {
-    val buf = readFile("./sample_problems/3te/10.kif")
+    val buf = readFile("./sample_problems/variations.kif")
     val tokens = tokenise(buf)
     println(tokens)
     val (gameInfo, state1) = parseGameInformation(ParseState(tokens))
     println(gameInfo.startPosition)
 
-    val state2 = if (state1.peek() == Token.MoveSectionDelineation) {
-        state1.advance()
-    } else {
-        state1
-    }
-    val (moveList, state3) = parseMoveSequence(state2)
+    val (moveList, state2) = parseMainMoveSection(state1)
     println(moveList)
+
+    val (variationList, state3) = parseVariationSection(state2)
+    for (variation in variationList) {
+        println("Move number: ${variation.moveNum}")
+        println(variation.moveList)
+    }
 }

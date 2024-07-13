@@ -2,5 +2,7 @@
 <project version="4">
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/sample_problems/3te/1.kif" charset="Shift_JIS" />
+    <file url="file://$PROJECT_DIR$/sample_problems/3te/yolos.kif" charset="Shift_JIS" />
+    <file url="file://$PROJECT_DIR$/sample_problems/variations.kif" charset="Shift_JIS" />
   </component>
 </project>

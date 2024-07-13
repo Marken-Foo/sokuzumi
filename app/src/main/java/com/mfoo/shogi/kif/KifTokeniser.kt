@@ -55,8 +55,11 @@ fun tokenise(input: BufferedReader): List<Token> {
     var line: String? = input.readLine() ?: return tokens
 
     while (line != null) {
+        if (line == "") {
+            line = input.readLine()
+        }
         // BOD is a multiline token
-        if (KifRegex.bodStart.matchAt(line, 0) != null) {
+        else if (KifRegex.bodStart.matchAt(line, 0) != null) {
             val bodLines: MutableList<String> = mutableListOf()
             while (KifRegex.bodEnd.matchAt(line!!, 0) == null) {
                 bodLines.add(line)
