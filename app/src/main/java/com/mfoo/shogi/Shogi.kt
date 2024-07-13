@@ -71,6 +71,10 @@ value class Col(val int: Int)
  * the upper-right corner is 11 and the lower-left is 99.
  */
 data class Square(val col: Col, val row: Row) {
+    override fun toString(): String {
+        return "Sq(${col.int}${row.int})"
+    }
+
     companion object {
         fun all(): Iterable<Square> = (1..9).flatMap { x ->
             (1..9).map { y -> Square(Col(x), Row(y)) }
