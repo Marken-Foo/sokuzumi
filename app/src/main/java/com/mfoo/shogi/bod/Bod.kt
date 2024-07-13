@@ -65,6 +65,7 @@ private fun parseBodSquare(match: MatchResult): Koma? {
         '玉' -> KomaType.OU
         '飛' -> KomaType.HI
         '龍' -> KomaType.RY
+        '竜' -> KomaType.RY
         '角' -> KomaType.KA
         '馬' -> KomaType.UM
         '金' -> KomaType.KI
@@ -117,11 +118,11 @@ private fun parseHandPair(match: MatchResult): Pair<KomaType, Int>? {
     } else {
         KanjiNumbers.read(amountInKanji)
     }
-    val komaType = match.groups["KomaType"]?.value?.let(::toKomaType)
+    val komaType = match.groups["KomaType"]?.value?.let(::toHandKomaType)
     return komaType?.let { amount?.let { komaType to amount } }
 }
 
-private fun toKomaType(string: String): KomaType? {
+private fun toHandKomaType(string: String): KomaType? {
     return when (string) {
         "歩" -> KomaType.FU
         "香" -> KomaType.KY

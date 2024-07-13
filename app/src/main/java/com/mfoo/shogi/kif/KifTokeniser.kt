@@ -3,16 +3,18 @@ package com.mfoo.shogi.kif
 import java.io.BufferedReader
 import java.io.File
 import java.nio.charset.Charset
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 sealed interface Token {
     data class Handicap(val name: String) : Token
     data class Bod(val lines: List<String>) : Token
     data object MoveSectionDelineation : Token
     data class MoveLine(
-        val moveNum: String,
+        val moveNum: Int,
         val moveStr: String,
-        val moveTime: String?,
-        val totalTime: String?,
+        val moveTime: Duration?,
+        val totalTime: Duration?,
     ) : Token
 
     data class Comment(val line: String) : Token
@@ -33,9 +35,11 @@ private object KifRegex {
     val headerKeyValuePair = """^[ \t]*(?<Key>.+)：(?<Value>.*)""".toRegex()
     private const val moveNum = """(?<MoveNum>[0-9]+)"""
     private const val moveBody = """(?<MoveBody>[　\S]+)"""
-    private const val moveTime = """(?<MoveTime>\d+:\d{2})"""
-    private const val totalTime = """(?<TotalTime>\d+:\d{2}:\d{2})"""
-    private const val moveTimes = """\(\s*$moveTime\s*/\s*$totalTime\s*\)"""
+    private const val moveTime = """(?<MoveMinutes>\d+):(?<MoveSeconds>\d{2})"""
+    private const val totalTime =
+        """(?<TotalHours>\d+):(?<TotalMinutes>\d{2}):(?<TotalSeconds>\d{2})"""
+    private const val moveTimes =
+        """\(\s*(?<MoveTime>$moveTime)\s*/\s*(?<TotalTime>$totalTime)\s*\)"""
     private const val moveLineStr =
         "^[ \\t]*$moveNum[ \\t]*$moveBody[ \\t]*(?:$moveTimes)?[ \\t]*$"
     val moveLine = moveLineStr.toRegex()
@@ -69,14 +73,33 @@ fun tokenise(input: BufferedReader): List<Token> {
     return tokens
 }
 
+private fun getMoveDuration(match: MatchResult): Duration? {
+    if (match.groups["MoveTime"] == null) {
+        return null
+    }
+    val minutes = match.groups["MoveMinutes"]?.value?.toInt() ?: 0
+    val seconds = match.groups["MoveSeconds"]?.value?.toInt() ?: 0
+    return (minutes * 60 + seconds).seconds
+}
+
+private fun getTotalDuration(match: MatchResult): Duration? {
+    if (match.groups["TotalTime"] == null) {
+        return null
+    }
+    val hours = match.groups["TotalHours"]?.value?.toInt() ?: 0
+    val minutes = match.groups["TotalMinutes"]?.value?.toInt() ?: 0
+    val seconds = match.groups["TotalSeconds"]?.value?.toInt() ?: 0
+    return (hours * 3600 + minutes * 60 + seconds).seconds
+}
+
 fun tokeniseLine(input: String): Token {
     KifRegex.moveLine
         .matchAt(input, 0)
         ?.let {
-            val moveNum = it.groups["MoveNum"]?.value ?: ""
+            val moveNum = it.groups["MoveNum"]?.value?.toInt() ?: 0
             val moveBody = it.groups["MoveBody"]?.value ?: ""
-            val moveTime = it.groups["MoveTime"]?.value
-            val totalTime = it.groups["TotalTime"]?.value
+            val moveTime = getMoveDuration(it)
+            val totalTime = getTotalDuration(it)
             return Token.MoveLine(
                 moveNum = moveNum,
                 moveStr = moveBody,
