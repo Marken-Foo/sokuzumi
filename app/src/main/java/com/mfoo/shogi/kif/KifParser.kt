@@ -169,36 +169,22 @@ private fun makeMoveTree(
     val allVariations = ArrayDeque(variationList)
     allVariations.addFirst(mainVariation)
 
-    var lastBranchMoveNum = Int.MIN_VALUE
-    var branches: BranchNodes = mutableMapOf()
-    for (i in allVariations.indices.max() downTo 0) {
-        val variation = allVariations[i]
-
-        var node: KifAst.MoveNode? = null
-        if (variation.moveNum < lastBranchMoveNum) {
-            // the current variation contains some previously parsed variations
-            val applicableBranches = branches
-                .filter { (n, _) -> n > variation.moveNum }
-                .toMutableMap()
-            val remainingBranches = branches
-                .filterNot { (n, _) -> n > variation.moveNum }
-                .toMutableMap()
-            branches = remainingBranches
-            node = makeVariationNodes(variation, applicableBranches)
-        } else {
-            node = makeVariationNodes(variation)
-        }
+    val branches = allVariations.foldRight(
+        mutableMapOf()
+    ) { variation, acc: BranchNodes ->
+        val branchesToMerge = acc
+            .filter { (n, _) -> n > variation.moveNum }
+            .toMutableMap()
+        val unmergedBranches = acc
+            .filterNot { (n, _) -> n > variation.moveNum }
+            .toMutableMap()
+        val node = makeVariationNodes(variation, branchesToMerge)
         node?.let {
-            val deque = branches[variation.moveNum]
-            if (deque == null) {
-                branches[variation.moveNum] = ArrayDeque(listOf(it))
-            } else {
-                deque.addFirst(it)
-            }
+            unmergedBranches.addNode(variation.moveNum, node)
         }
-
-        lastBranchMoveNum = variation.moveNum
+        unmergedBranches
     }
+
     assert(branches.size <= 1)
     if (branches.size == 1) {
         return KifAst.RootNode(branches.values.toList()[0])
@@ -206,11 +192,16 @@ private fun makeMoveTree(
     return null
 }
 
-typealias BranchNodes = MutableMap<Int, ArrayDeque<KifAst.MoveNode>>
+private typealias BranchNodes = MutableMap<Int, ArrayDeque<KifAst.MoveNode>>
+
+private fun BranchNodes.addNode(moveNum: Int, node: KifAst.MoveNode) {
+    this.putIfAbsent(moveNum, ArrayDeque())
+    this[moveNum]?.addFirst(node)
+}
 
 private fun makeVariationNodes(
     variation: Variation,
-    branches: BranchNodes = mutableMapOf(),
+    branches: BranchNodes,
 ): KifAst.MoveNode? {
     return variation.moveList.foldRight<KifAst.Move, KifAst.MoveNode?>(null) { move, acc ->
         val children = branches[move.moveNum + 1] ?: ArrayDeque()
