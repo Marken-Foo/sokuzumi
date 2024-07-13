@@ -82,7 +82,7 @@ private fun parseGameInformation(input: ParseState): ParseResult<GameInformation
     )
 }
 
-private fun parseMoveSection(input: ParseState): ParseResult<List<KifAst.Move>> {
+private fun parseMoveSequence(input: ParseState): ParseResult<List<KifAst.Move>> {
     var state = input
     var token = state.peek()
 
@@ -93,14 +93,14 @@ private fun parseMoveSection(input: ParseState): ParseResult<List<KifAst.Move>> 
 
     while (token != null) {
         when (token) {
-            is Token.Bod -> Unit
+            is Token.Bod -> break // Unexpected
             is Token.Comment -> {
                 currentMove = currentMove?.addCommentLine(token.line)
             }
 
             is Token.Escape -> Unit
-            is Token.Handicap -> Unit
-            is Token.HeaderKeyValuePair -> Unit
+            is Token.Handicap -> break // Unexpected
+            is Token.HeaderKeyValuePair -> break // Unexpected
             is Token.MoveLine -> {
                 val move = parseMove(token, previousSq)
                 when (move) {
@@ -114,8 +114,8 @@ private fun parseMoveSection(input: ParseState): ParseResult<List<KifAst.Move>> 
                 currentMove = move
             }
 
-            Token.MoveSectionDelineation -> Unit
-            Token.Unknown -> Unit
+            Token.MoveSectionDelineation -> break // Unexpected
+            Token.Unknown -> break // Unexpected
             is Token.VariationStart -> break // signals start of variations section
         }
         state = state.advance()
@@ -131,6 +131,12 @@ fun main() {
     println(tokens)
     val (gameInfo, state1) = parseGameInformation(ParseState(tokens))
     println(gameInfo.startPosition)
-    val (moveList, state2) = parseMoveSection(state1)
+
+    val state2 = if (state1.peek() == Token.MoveSectionDelineation) {
+        state1.advance()
+    } else {
+        state1
+    }
+    val (moveList, state3) = parseMoveSequence(state2)
     println(moveList)
 }
