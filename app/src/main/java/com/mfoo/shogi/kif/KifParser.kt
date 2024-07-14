@@ -5,6 +5,32 @@ import com.mfoo.shogi.PositionImpl
 import com.mfoo.shogi.Square
 import com.mfoo.shogi.bod.parseBod
 
+/**
+ * Parse a provided KIF file.
+ */
+fun readKifFile(filename: String): KifAst.Game? {
+    val buf = readFile(filename)
+    val tokens = tokenise(buf)
+    val (gameInfo, state1) = parseGameInformation(ParseState(tokens))
+    val (moveList, state2) = parseMainMoveSection(state1)
+    val (variationList, _) = parseVariationSection(state2)
+
+    val rootNode = makeMoveTree(moveList, variationList)
+    return rootNode?.let {
+        KifAst.Game(
+            gameInfo.startPosition,
+            rootNode,
+            gameInfo.headers,
+        )
+    }
+}
+
+private typealias Parser<T> = (input: ParseState) -> ParseResult<T>
+
+/**
+ * Represents the state of a parser as it traverses the input list of tokens.
+ * To be provided as input to a parsing function.
+ */
 private data class ParseState(val input: List<Token>, val parsePos: Int = 0) {
     fun peek(): Token? {
         return input.getOrNull(parsePos)
@@ -15,6 +41,10 @@ private data class ParseState(val input: List<Token>, val parsePos: Int = 0) {
     }
 }
 
+/**
+ * The output of a parsing function, comprising the result of the parse and
+ * the state of the parser after the parse.
+ */
 private data class ParseResult<T>(val value: T, val state: ParseState)
 
 // Store handicap positions as SFEN for now because it's easier to read the code,
@@ -57,7 +87,7 @@ private fun parseGameInformation(input: ParseState): ParseResult<GameInformation
             is Token.Bod -> startPos =
                 parseBod(token.lines)?.let { PositionImpl.fromBodAst(it) }
 
-            is Token.Comment -> Unit
+            is Token.Comment -> Unit // Should be attached to first move
             is Token.Escape -> Unit
             is Token.HeaderKeyValuePair -> headers.add(
                 KifAst.Header(
@@ -68,8 +98,8 @@ private fun parseGameInformation(input: ParseState): ParseResult<GameInformation
 
             is Token.MoveLine -> break
             Token.MoveSectionDelineation -> break
-            Token.Unknown -> Unit
-            is Token.VariationStart -> break
+            Token.Unknown -> break // Unexpected - unknown token
+            is Token.VariationStart -> break // Unexpected - missing mainline
         }
         state = state.advance()
         token = state.peek()
@@ -82,6 +112,11 @@ private fun parseGameInformation(input: ParseState): ParseResult<GameInformation
     )
 }
 
+/**
+ * Parses the mainline moves of the KIF, including skipping the optional line:
+ *
+ * `手数----指手---------消費時間--`
+ */
 private fun parseMainMoveSection(input: ParseState): ParseResult<List<KifAst.Move>> {
     var state = input
     if (state.peek() is Token.MoveSectionDelineation) {
@@ -91,6 +126,9 @@ private fun parseMainMoveSection(input: ParseState): ParseResult<List<KifAst.Mov
     return ParseResult(moveList, endState)
 }
 
+/**
+ * Parses a series of lines containing moves.
+ */
 private fun parseMoveSequence(input: ParseState): ParseResult<List<KifAst.Move>> {
     var state = input
     var token = state.peek()
@@ -136,6 +174,10 @@ private fun parseMoveSequence(input: ParseState): ParseResult<List<KifAst.Move>>
 
 private class Variation(val moveNum: Int, val moveList: List<KifAst.Move>)
 
+/**
+ * Parses all the variations in the KIF, returning them in order of parsing (top-down).
+ * Consumes all lines beginning with `変化：N手` and the moves that follow them.
+ */
 private fun parseVariationSection(input: ParseState): ParseResult<List<Variation>> {
     var state = input
     val variations = mutableListOf<Variation?>()
@@ -147,6 +189,9 @@ private fun parseVariationSection(input: ParseState): ParseResult<List<Variation
     return ParseResult(variations.filterNotNull(), state)
 }
 
+/**
+ * Parses a single variation. Consumes the `変化：N手` line and the moves that follow.
+ */
 private fun parseVariation(input: ParseState): ParseResult<Variation?> {
     val token = input.peek()
     if (token !is Token.VariationStart) {
@@ -158,6 +203,14 @@ private fun parseVariation(input: ParseState): ParseResult<Variation?> {
     return ParseResult(Variation(token.moveNum, moveList), state)
 }
 
+/**
+ * Converts the parsed moves of a KIF into a move tree.
+ *
+ * A KIF file stores the moves in preorder traversal order, if we consider
+ * the mainline to be the leftmost branch. Given the mainline and a list of
+ * variations in order of appearance in the KIF file, we can reconstruct the
+ * move tree.
+ */
 private fun makeMoveTree(
     mainMoves: List<KifAst.Move>,
     variationList: List<Variation>,
@@ -165,10 +218,16 @@ private fun makeMoveTree(
     if (mainMoves.isEmpty()) {
         return null
     }
+    // Mainline moves can also be considered as a Variation
     val mainVariation = Variation(mainMoves[0].moveNum, mainMoves)
     val allVariations = ArrayDeque(variationList)
     allVariations.addFirst(mainVariation)
 
+    // Construct the variation subtrees one at a time, in reverse order of
+    // appearance (to construct from the leaves back towards the root).
+    // Keep track of each subtree as we construct it and which move it starts from.
+    // For each variation we parse, we need to include the subtrees that start
+    // after the move number of the current variation's start.
     val branches = allVariations.foldRight(
         mutableMapOf()
     ) { variation, acc: BranchNodes ->
@@ -185,13 +244,16 @@ private fun makeMoveTree(
         unmergedBranches
     }
 
-    assert(branches.size <= 1)
-    if (branches.size == 1) {
-        return KifAst.RootNode(branches.values.toList()[0])
+    if (branches.size != 1) {
+        return null
     }
-    return null
+    return KifAst.RootNode(branches.values.toList()[0])
 }
 
+/**
+ * A mapping of move numbers to the nodes representing the variations that start
+ * at that move.
+ */
 private typealias BranchNodes = MutableMap<Int, ArrayDeque<KifAst.MoveNode>>
 
 private fun BranchNodes.addNode(moveNum: Int, node: KifAst.MoveNode) {
@@ -199,10 +261,17 @@ private fun BranchNodes.addNode(moveNum: Int, node: KifAst.MoveNode) {
     this[moveNum]?.addFirst(node)
 }
 
+/**
+ * Constructs the tree of nodes corresponding to a variation, given the
+ * variation moves and a collection of already-constructed subtrees to be
+ * included at specific move numbers.
+ */
 private fun makeVariationNodes(
     variation: Variation,
     branches: BranchNodes,
 ): KifAst.MoveNode? {
+    // As variation moves are in sequence, traverse in reverse to construct
+    // the chain of nodes starting from the leaf.
     return variation.moveList.foldRight<KifAst.Move, KifAst.MoveNode?>(null) { move, acc ->
         val children = branches[move.moveNum + 1] ?: ArrayDeque()
         acc?.let { children.addFirst(acc) }
@@ -211,20 +280,6 @@ private fun makeVariationNodes(
 }
 
 fun main() {
-    val buf = readFile("./sample_problems/variations.kif")
-    val tokens = tokenise(buf)
-    println(tokens)
-    val (gameInfo, state1) = parseGameInformation(ParseState(tokens))
-    println(gameInfo.startPosition)
-
-    val (moveList, state2) = parseMainMoveSection(state1)
-    println(moveList)
-
-    val (variationList, state3) = parseVariationSection(state2)
-    for (variation in variationList) {
-        println("Move number: ${variation.moveNum}")
-        println(variation.moveList)
-    }
-
-    println(makeMoveTree(moveList, variationList))
+    val game = readKifFile("./sample_problems/variations.kif")
+    println(game)
 }

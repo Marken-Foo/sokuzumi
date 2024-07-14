@@ -8,11 +8,19 @@ import kotlin.time.Duration
 sealed interface KifAst {
     class Game(
         val startPos: Position,
-        val rootMove: MoveNode,
+        val rootNode: RootNode,
         val headers: List<Header>,
-    ) : KifAst
+    ) : KifAst {
+        override fun toString(): String {
+            return "Headers: [${headers.joinToString(", ")}]\n${startPos}\n${rootNode}"
+        }
+    }
 
-    class Header(val key: String, val value: String) : KifAst
+    class Header(val key: String, val value: String) : KifAst {
+        override fun toString(): String {
+            return "Header[${key}: ${value}]"
+        }
+    }
 
     data class RootNode(
         val children: List<MoveNode>,
