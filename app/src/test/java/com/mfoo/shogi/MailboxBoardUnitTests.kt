@@ -1,14 +1,6 @@
 package com.mfoo.shogi
 
 import arrow.core.Either
-import com.mfoo.shogi.Board
-import com.mfoo.shogi.Col
-import com.mfoo.shogi.Koma
-import com.mfoo.shogi.KomaType
-import com.mfoo.shogi.MailboxBoard
-import com.mfoo.shogi.Row
-import com.mfoo.shogi.Side
-import com.mfoo.shogi.Square
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
@@ -30,7 +22,7 @@ sealed interface BoardOperation {
 fun testBoard(
     initialBoardData: Map<Square, Koma>,
     operations: List<BoardOperation>,
-    expectedBoardData: Map<Square, Koma>
+    expectedBoardData: Map<Square, Koma>,
 ) {
     val initialBoard = MailboxBoard.fromMap(initialBoardData)
     val finalBoard = operations.fold(initialBoard) { acc, op ->
