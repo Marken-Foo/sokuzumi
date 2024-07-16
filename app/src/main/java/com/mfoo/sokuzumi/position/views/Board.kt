@@ -55,7 +55,17 @@ fun Board(positionViewModel: PositionViewModel, modifier: Modifier = Modifier) {
             Modifier.size(boardWidth, boardHeight)
         )
 
-        for (k in positionUiState.komas) {
+        positionUiState.selectedSq?.let {
+            Box(
+                modifier = Modifier
+                    .width(sqWidth)
+                    .height(sqHeight)
+                    .offset(sqX(it.x), sqY(it.y))
+                    .background(Color(153, 255, 0, 68))
+            )
+        }
+
+        for (k in positionUiState.board.komas) {
             Koma(
                 k.komaType,
                 k.isUpsideDown,

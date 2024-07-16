@@ -26,20 +26,38 @@ data class BoardState(
     val komas: List<KomaOnBoard>,
 )
 
+data class SquareXY(val x: Int, val y: Int)
+
+data class PositionUiState(
+    val board: BoardState,
+    val selectedSq: SquareXY?,
+)
+
 // For Android lifecycle persistence across configuration change
 class PositionViewModel : ViewModel() {
     private val _vm = PositionVM()
-    private val _uiState = MutableStateFlow(_vm.calculateVm(_vm.pos))
-    val uiState: StateFlow<BoardState> = _uiState.asStateFlow()
+    private val _uiState =
+        MutableStateFlow(
+            PositionUiState(
+                board = _vm.calculateVm(_vm.pos),
+                selectedSq = null
+            )
+        )
+    val uiState: StateFlow<PositionUiState> = _uiState.asStateFlow()
 
     fun onSquareClick(x: Int, y: Int) {
         _vm.onSquareClick(x, y)
-        _uiState.value = _vm.calculateVm(_vm.pos)
+        _uiState.update { currentState ->
+            currentState.copy(
+                board = _vm.calculateVm(_vm.pos),
+                selectedSq = _vm.selectedSq?.let(_vm::squareToXY),
+            )
+        }
     }
 }
 
 // MVVM "ViewModel" in the app
-class PositionVM {
+class PositionVM() {
     var pos: Position = PositionImpl.empty()
         .setKoma(
             Square(Col(1), Row(1)),
@@ -58,9 +76,11 @@ class PositionVM {
             Koma(Side.SENTE, KomaType.KA)
         )
 
-    private fun squareToXY(sq: Square): Pair<Int, Int> {
+    var selectedSq: Square? = null
+
+    fun squareToXY(sq: Square): SquareXY {
         val numCols = 9
-        return Pair(numCols - sq.col.int, sq.row.int - 1)
+        return SquareXY(x = numCols - sq.col.int, y = sq.row.int - 1)
     }
 
     private fun xYToSquare(x: Int, y: Int): Square {
@@ -78,15 +98,12 @@ class PositionVM {
 
     fun onSquareClick(x: Int, y: Int) {
         val sq = xYToSquare(x, y)
+        selectedSq = sq
         // toggle to test
-        println("Inside sqclick")
         pos.getKoma(sq).map {
-            println("Square: ${sq}")
             pos = if (it == null) {
-                println("setting")
                 pos.setKoma(sq, Koma(Side.GOTE, KomaType.TO))
             } else {
-                println("removing")
                 pos.removeKoma(sq)
             }
         }
