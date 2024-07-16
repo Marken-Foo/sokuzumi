@@ -2,6 +2,7 @@ package com.mfoo.sokuzumi.position
 
 import androidx.lifecycle.ViewModel
 import com.mfoo.shogi.Col
+import com.mfoo.shogi.Koma
 import com.mfoo.shogi.KomaType
 import com.mfoo.shogi.Position
 import com.mfoo.shogi.PositionImpl
@@ -11,6 +12,7 @@ import com.mfoo.shogi.Square
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 
 data class KomaOnBoard(
@@ -29,31 +31,41 @@ class PositionViewModel : ViewModel() {
     private val _vm = PositionVM()
     private val _uiState = MutableStateFlow(_vm.calculateVm(_vm.pos))
     val uiState: StateFlow<BoardState> = _uiState.asStateFlow()
+
+    fun onSquareClick(x: Int, y: Int) {
+        _vm.onSquareClick(x, y)
+        _uiState.value = _vm.calculateVm(_vm.pos)
+    }
 }
 
 // MVVM "ViewModel" in the app
 class PositionVM {
-    val pos: Position = PositionImpl.empty()
+    var pos: Position = PositionImpl.empty()
         .setKoma(
             Square(Col(1), Row(1)),
-            com.mfoo.shogi.Koma(Side.GOTE, KomaType.KY)
+            Koma(Side.GOTE, KomaType.KY)
         )
         .setKoma(
             Square(Col(1), Row(3)),
-            com.mfoo.shogi.Koma(Side.GOTE, KomaType.FU)
+            Koma(Side.GOTE, KomaType.FU)
         )
         .setKoma(
             Square(Col(5), Row(9)),
-            com.mfoo.shogi.Koma(Side.SENTE, KomaType.OU)
+            Koma(Side.SENTE, KomaType.OU)
         )
         .setKoma(
             Square(Col(8), Row(8)),
-            com.mfoo.shogi.Koma(Side.SENTE, KomaType.KA)
+            Koma(Side.SENTE, KomaType.KA)
         )
 
     private fun squareToXY(sq: Square): Pair<Int, Int> {
         val numCols = 9
         return Pair(numCols - sq.col.int, sq.row.int - 1)
+    }
+
+    private fun xYToSquare(x: Int, y: Int): Square {
+        val numCols = 9
+        return Square(Col(numCols - x), Row(y + 1))
     }
 
     fun calculateVm(position: Position): BoardState {
@@ -62,5 +74,21 @@ class PositionVM {
             KomaOnBoard(koma.komaType, x, y, !koma.side.isSente())
         }
         return BoardState(allKomas)
+    }
+
+    fun onSquareClick(x: Int, y: Int) {
+        val sq = xYToSquare(x, y)
+        // toggle to test
+        println("Inside sqclick")
+        pos.getKoma(sq).map {
+            println("Square: ${sq}")
+            pos = if (it == null) {
+                println("setting")
+                pos.setKoma(sq, Koma(Side.GOTE, KomaType.TO))
+            } else {
+                println("removing")
+                pos.removeKoma(sq)
+            }
+        }
     }
 }
