@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.mfoo.sokuzumi.position.PosUiState
 import com.mfoo.sokuzumi.position.PositionViewModel
 
 // Contains just the (9x9) shogi board and komas on it
@@ -55,12 +56,14 @@ fun Board(positionViewModel: PositionViewModel, modifier: Modifier = Modifier) {
             Modifier.size(boardWidth, boardHeight)
         )
 
-        positionUiState.selectedSq?.let {
+        val selected = positionUiState.selection
+        if (selected is PosUiState.SelectedElement.Square) {
+            val selectedSq = selected.t
             Box(
                 modifier = Modifier
                     .width(sqWidth)
                     .height(sqHeight)
-                    .offset(sqX(it.x), sqY(it.y))
+                    .offset(sqX(selectedSq.x), sqY(selectedSq.y))
                     .background(Color(153, 255, 0, 68))
             )
         }
