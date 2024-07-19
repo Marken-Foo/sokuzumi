@@ -145,4 +145,11 @@ class HandImplTests : FunSpec({
             mapOf(KomaType.HI to 2, KomaType.KE to 0)
         )
     }
+    test("Get all KomaType amounts in hand") {
+        val expected =
+            mapOf(KomaType.FU to 3, KomaType.KI to 2, KomaType.HI to 1)
+        val sut = expected.toList().let(HandImpl::fromList)
+        val result = sut.getAmounts()
+        expected shouldBe result
+    }
 })

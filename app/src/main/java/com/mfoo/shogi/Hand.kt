@@ -1,6 +1,7 @@
 package com.mfoo.shogi
 
 interface Hand {
+    fun getAmounts(): Map<KomaType, Int>
     fun getAmount(komaType: KomaType): Int
     fun setAmount(komaType: KomaType, amount: Int): Hand
     fun increment(komaType: KomaType): Hand
@@ -12,17 +13,21 @@ interface HandFactory {
 }
 
 class HandImpl private constructor(
-    val amounts: Map<KomaType, Int>
+    private val amounts: Map<KomaType, Int>,
 ) : Hand {
     override fun equals(other: Any?) =
         (other is HandImpl) && this.amounts == other.amounts
 
     override fun hashCode(): Int {
-        return amounts.hashCode()
+        return this.amounts.hashCode()
     }
 
     override fun toString(): String {
         return this.amounts.toString()
+    }
+
+    override fun getAmounts(): Map<KomaType, Int> {
+        return this.amounts.filter { (_, amount) -> amount > 0 }
     }
 
     override fun getAmount(komaType: KomaType): Int =
