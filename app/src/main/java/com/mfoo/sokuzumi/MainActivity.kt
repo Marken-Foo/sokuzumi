@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import com.mfoo.sokuzumi.position.views.Board
 import com.mfoo.sokuzumi.position.PositionViewModel
+import com.mfoo.sokuzumi.position.views.Position
 import com.mfoo.sokuzumi.ui.theme.SokuzumiTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,7 +19,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             SokuzumiTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Board(PositionViewModel(), Modifier.padding(innerPadding))
+                    Position(
+                        PositionViewModel(),
+                        Modifier.padding(innerPadding)
+                    )
                 }
             }
         }

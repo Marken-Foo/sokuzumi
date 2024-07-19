@@ -7,6 +7,8 @@ import com.mfoo.shogi.Square
 data class PosUiState(
     val board: BoardState,
     val selection: SelectedElement = SelectedElement.None,
+    val senteHand: Map<KomaType, Int>,
+    val goteHand: Map<KomaType, Int>,
 ) {
     data class KomaOnBoard(
         val komaType: KomaType,
