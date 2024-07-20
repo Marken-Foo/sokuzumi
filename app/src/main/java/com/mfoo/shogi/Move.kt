@@ -60,10 +60,16 @@ fun Position.doMove(move: Move): Position {
         is Move.GameEnd -> this
         is Move.Regular -> {
             val capturedKoma = this.getKoma(move.endSq)
+            val finalKoma =
+                if (move.isPromotion && move.komaType.isPromotable()) {
+                    Koma(move.side, move.komaType.promote())
+                } else {
+                    Koma(move.side, move.komaType)
+                }
             this
                 .toggleSideToMove()
                 .removeKoma(move.startSq)
-                .setKoma(move.endSq, Koma(move.side, move.komaType))
+                .setKoma(move.endSq, finalKoma)
                 .putCapturedKomaInHand(move.side, capturedKoma)
         }
 
