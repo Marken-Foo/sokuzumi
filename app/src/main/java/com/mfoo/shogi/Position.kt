@@ -32,12 +32,16 @@ interface PositionFactory {
     fun fromBodAst(bodPosition: BodAst.Position): Position?
 }
 
+interface MailboxPosition {
+    fun getMailbox(): MailboxBoard
+}
+
 data class PositionImpl(
     private val senteHand: Hand,
     private val goteHand: Hand,
     private val board: Board,
     private val sideToMove: Side,
-) : Position {
+) : Position, MailboxPosition {
     override fun getHandOfSide(side: Side): Hand {
         return when (side) {
             Side.SENTE -> senteHand
@@ -114,6 +118,10 @@ data class PositionImpl(
         return copy(sideToMove = sideToMove.switch())
     }
 
+    override fun getMailbox(): MailboxBoard {
+        return this.board as MailboxBoard
+    }
+
     override fun equals(other: Any?): Boolean {
         return if (other is PositionImpl) {
             this.senteHand == other.senteHand
@@ -138,7 +146,7 @@ data class PositionImpl(
             return PositionImpl(
                 senteHand = HandImpl.empty(),
                 goteHand = HandImpl.empty(),
-                board = MailboxBoard.empty(),
+                board = MailboxBoardImpl.empty(),
                 sideToMove = Side.SENTE,
             )
         }

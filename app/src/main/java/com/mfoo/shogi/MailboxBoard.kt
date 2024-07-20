@@ -2,6 +2,17 @@ package com.mfoo.shogi
 
 import arrow.core.Either
 
+interface MailboxBoard {
+    val mailbox: List<MailboxContent>
+}
+
+sealed interface MailboxContent {
+    @JvmInline
+    value class Koma(val value: com.mfoo.shogi.Koma) : MailboxContent
+    data object Empty : MailboxContent
+    data object Invalid : MailboxContent
+}
+
 /**
  * `MailboxBoard` uses a mailbox representation of the shogi board to simplify
  * move generation for standard shogi.
@@ -13,17 +24,9 @@ import arrow.core.Either
  * The indexes are enumerated from top to bottom and left to right, such that
  * e.g. the shogi 11 square has index 31, the shogi 12 square has index 42, etc.
  */
-class MailboxBoard private constructor(
-    val mailbox: List<MailboxContent>,
-) : Board {
-    sealed interface MailboxContent {
-        @JvmInline
-        value class Koma(val value: com.mfoo.shogi.Koma) : MailboxContent
-        data object Empty : MailboxContent
-        data object Invalid : MailboxContent
-    }
-
-
+class MailboxBoardImpl private constructor(
+    override val mailbox: List<MailboxContent>,
+) : Board, MailboxBoard {
     override fun getKoma(sq: Square): Either<Unit, Koma?> {
         return when (val content = mailbox[indexFromSq(sq)]) {
             is MailboxContent.Koma -> Either.Right(content.value)
@@ -35,17 +38,17 @@ class MailboxBoard private constructor(
     override fun setKoma(sq: Square, koma: Koma): Board {
         val newMailbox = this.mailbox.toMutableList()
         newMailbox[indexFromSq(sq)] = MailboxContent.Koma(koma)
-        return MailboxBoard(mailbox = newMailbox.toList())
+        return MailboxBoardImpl(mailbox = newMailbox.toList())
     }
 
     override fun removeKoma(sq: Square): Board {
         val newMailbox = this.mailbox.toMutableList()
         newMailbox[indexFromSq(sq)] = MailboxContent.Empty
-        return MailboxBoard(mailbox = newMailbox.toList())
+        return MailboxBoardImpl(mailbox = newMailbox.toList())
     }
 
     override fun equals(other: Any?): Boolean {
-        return if (other is MailboxBoard) {
+        return if (other is MailboxBoardImpl) {
             this.mailbox == other.mailbox
         } else {
             false
@@ -83,7 +86,7 @@ class MailboxBoard private constructor(
             (1..9).zip(1..9).map { (x, y) -> Square(Col(x), Row(y)) }
                 .map(Companion::indexFromSq)
                 .forEach { idx -> mailbox.set(idx, MailboxContent.Empty) }
-            return MailboxBoard(mailbox)
+            return MailboxBoardImpl(mailbox)
         }
 
         private fun colFromIndex(idx: Int): Col =

@@ -6,7 +6,7 @@ import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 
-private fun MailboxBoard.Companion.fromMap(boardMap: Map<Square, Koma>): Board {
+private fun MailboxBoardImpl.Companion.fromMap(boardMap: Map<Square, Koma>): Board {
     var board = empty()
     for ((sq, koma) in boardMap) {
         board = board.setKoma(sq, koma)
@@ -24,32 +24,32 @@ private fun testBoard(
     operations: List<BoardOperation>,
     expectedBoardData: Map<Square, Koma>,
 ) {
-    val initialBoard = MailboxBoard.fromMap(initialBoardData)
+    val initialBoard = MailboxBoardImpl.fromMap(initialBoardData)
     val finalBoard = operations.fold(initialBoard) { acc, op ->
         when (op) {
             is BoardOperation.SetKoma -> acc.setKoma(op.sq, op.koma)
             is BoardOperation.RemoveKoma -> acc.removeKoma(op.sq)
         }
     }
-    finalBoard shouldBe MailboxBoard.fromMap(expectedBoardData)
+    finalBoard shouldBe MailboxBoardImpl.fromMap(expectedBoardData)
 }
 
 class MailboxBoardUnitTests : FunSpec({
     test("Boards with same structure should be equal") {
         val sq = Square(Col(4), Row(7))
         val koma = Koma(Side.SENTE, KomaType.OU)
-        (MailboxBoard.empty().setKoma(sq, koma) == MailboxBoard.empty()
+        (MailboxBoardImpl.empty().setKoma(sq, koma) == MailboxBoardImpl.empty()
             .setKoma(sq, koma)).shouldBeTrue()
     }
     test("Different boards should be not equal") {
         val sq = Square(Col(4), Row(7))
         val koma = Koma(Side.SENTE, KomaType.OU)
         val koma2 = Koma(Side.GOTE, KomaType.OU)
-        (MailboxBoard.empty().setKoma(sq, koma) == MailboxBoard.empty()
+        (MailboxBoardImpl.empty().setKoma(sq, koma) == MailboxBoardImpl.empty()
             .setKoma(sq, koma2)).shouldBeFalse()
     }
     test("Empty board should contain nothing") {
-        val board = MailboxBoard.empty()
+        val board = MailboxBoardImpl.empty()
         val allSquares = Square.all()
         for (sq in allSquares) {
             board.getKoma(sq) shouldBe Either.Right(null)

@@ -28,15 +28,23 @@ private fun testRegularMove(
     val koma = komas[startSq]
     koma shouldNotBe null
 
+    val side = koma!!.side
+
     val move = Move.Regular(
         startSq = startSq,
         endSq = endSq,
         isPromotion = isPromotion,
-        side = koma!!.side,
+        side = koma.side,
         komaType = koma.komaType,
         capturedKoma = komas[endSq]
     )
-    val result = isValid(move, pos)
+    val result = isValid(move, pos.let {
+        if (side.isSente()) {
+            it
+        } else {
+            it.toggleSideToMove()
+        }
+    })
     result shouldBe expected
 }
 
