@@ -4,7 +4,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 
-fun HandImpl.Companion.fromList(komaAmounts: List<Pair<KomaType, Int>>): Hand {
+private fun HandImpl.Companion.fromList(komaAmounts: List<Pair<KomaType, Int>>): Hand {
     var hand = empty()
     for ((komaType, amount) in komaAmounts) {
         hand = hand.setAmount(komaType, amount)
@@ -12,7 +12,7 @@ fun HandImpl.Companion.fromList(komaAmounts: List<Pair<KomaType, Int>>): Hand {
     return hand
 }
 
-val ALLOWED_HAND_PIECES = listOf(
+private val ALLOWED_HAND_PIECES = listOf(
     KomaType.FU,
     KomaType.KY,
     KomaType.KE,
@@ -22,13 +22,13 @@ val ALLOWED_HAND_PIECES = listOf(
     KomaType.HI
 )
 
-sealed interface HandOperation {
+private sealed interface HandOperation {
     class SetAmount(val komaType: KomaType, val amount: Int) : HandOperation
     class Increment(val komaType: KomaType) : HandOperation
     class Decrement(val komaType: KomaType) : HandOperation
 }
 
-fun testHand(
+private fun testHand(
     initialHandData: Map<KomaType, Int>,
     operations: List<HandOperation>,
     expectedHandData: Map<KomaType, Int>,

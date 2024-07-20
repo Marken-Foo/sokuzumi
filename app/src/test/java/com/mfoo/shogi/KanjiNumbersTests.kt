@@ -3,7 +3,7 @@ package com.mfoo.shogi
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-val kanjiMap = mapOf(
+private val kanjiMap = mapOf(
     1 to "一",
     2 to "二",
     3 to "三",

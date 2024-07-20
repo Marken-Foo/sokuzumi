@@ -3,9 +3,9 @@ package com.mfoo.shogi
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
-val Pos: PositionFactory = PositionImpl
+private val Pos: PositionFactory = PositionImpl
 
-fun testIsolatedMove(move: Move.Regular) {
+private fun testIsolatedMove(move: Move.Regular) {
     val sut = Pos.empty()
         .setKoma(move.startSq, Koma(move.side, move.komaType))
         .let { if (move.side == Side.SENTE) it else it.toggleSideToMove() }
@@ -21,7 +21,7 @@ fun testIsolatedMove(move: Move.Regular) {
     result shouldBe expected
 }
 
-fun testCapture(move: Move.Regular, capturedKomaType: KomaType) {
+private fun testCapture(move: Move.Regular, capturedKomaType: KomaType) {
     val capturedKoma = Koma(move.side.switch(), capturedKomaType)
     val sut = Pos.empty()
         .setKoma(move.startSq, Koma(move.side, move.komaType))
@@ -40,7 +40,7 @@ fun testCapture(move: Move.Regular, capturedKomaType: KomaType) {
     result shouldBe expected
 }
 
-fun testDrop(move: Move.Drop, initialHandAmount: Int = 1) {
+private fun testDrop(move: Move.Drop, initialHandAmount: Int = 1) {
     val sut = Pos.empty()
         .setHandAmount(move.side, move.komaType, initialHandAmount)
         .let { if (move.side == Side.SENTE) it else it.toggleSideToMove() }
@@ -52,7 +52,7 @@ fun testDrop(move: Move.Drop, initialHandAmount: Int = 1) {
     result shouldBe expected
 }
 
-fun testGameEnd(move: Move.GameEnd) {
+private fun testGameEnd(move: Move.GameEnd) {
     val sut = Pos.empty()
     val result = sut.doMove(move)
     val expected = Pos.empty()

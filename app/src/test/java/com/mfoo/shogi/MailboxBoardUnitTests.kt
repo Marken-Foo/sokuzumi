@@ -6,7 +6,7 @@ import io.kotest.matchers.booleans.shouldBeFalse
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
 
-fun MailboxBoard.Companion.fromMap(boardMap: Map<Square, Koma>): Board {
+private fun MailboxBoard.Companion.fromMap(boardMap: Map<Square, Koma>): Board {
     var board = empty()
     for ((sq, koma) in boardMap) {
         board = board.setKoma(sq, koma)
@@ -14,12 +14,12 @@ fun MailboxBoard.Companion.fromMap(boardMap: Map<Square, Koma>): Board {
     return board
 }
 
-sealed interface BoardOperation {
+private sealed interface BoardOperation {
     class SetKoma(val sq: Square, val koma: Koma) : BoardOperation
     class RemoveKoma(val sq: Square) : BoardOperation
 }
 
-fun testBoard(
+private fun testBoard(
     initialBoardData: Map<Square, Koma>,
     operations: List<BoardOperation>,
     expectedBoardData: Map<Square, Koma>,

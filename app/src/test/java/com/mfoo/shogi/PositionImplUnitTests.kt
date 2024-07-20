@@ -4,7 +4,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.datatest.withData
 import io.kotest.matchers.shouldBe
 
-sealed interface PositionOperation {
+private sealed interface PositionOperation {
     class SetHandAmount(
         val side: Side, val komaType: KomaType, val amount: Int,
     ) : PositionOperation
@@ -19,7 +19,7 @@ sealed interface PositionOperation {
     class RemoveKoma(val sq: Square) : PositionOperation
 }
 
-fun operate(
+private fun operate(
     initialPosition: Position, operations: List<PositionOperation>,
 ): Position {
     return operations.fold(initialPosition) { acc, op ->
