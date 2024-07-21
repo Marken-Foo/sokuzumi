@@ -9,7 +9,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
 class ValidMoveKiTests : FunSpec({
-    test("Sente KI step") {
+    test("Sente KI faces north") {
         val side = Side.SENTE
         val startSq = sq(7, 8)
         val endSqs = listOf(
@@ -31,7 +31,7 @@ class ValidMoveKiTests : FunSpec({
         )
     }
 
-    test("Gote KI step") {
+    test("Gote KI faces south") {
         val side = Side.GOTE
         val startSq = sq(3, 5)
         val endSqs = listOf(
@@ -53,7 +53,7 @@ class ValidMoveKiTests : FunSpec({
         )
     }
 
-    test("Blocked sente KI step") {
+    test("Sente KI cannot move onto allied koma") {
         val side = Side.SENTE
         val startSq = sq(7, 8)
         val endSqs = listOf(
@@ -77,7 +77,7 @@ class ValidMoveKiTests : FunSpec({
         )
     }
 
-    test("Sente KI captures") {
+    test("Sente KI can capture enemy koma") {
         val side = Side.SENTE
         val startSq = sq(7, 8)
         val endSqs = listOf(
@@ -101,7 +101,7 @@ class ValidMoveKiTests : FunSpec({
         )
     }
 
-    test("Sente legal KI drop") {
+    test("Sente KI can be dropped") {
         val side = Side.SENTE
         val komaType = KomaType.KI
         val sq = sq(5, 3)

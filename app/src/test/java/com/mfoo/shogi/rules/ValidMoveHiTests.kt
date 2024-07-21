@@ -9,7 +9,7 @@ import com.mfoo.shogi.Square
 import io.kotest.core.spec.style.FunSpec
 
 class ValidMoveHiTests : FunSpec({
-    test("Regular step") {
+    test("HI moves orthogonally") {
         val side = Side.GOTE
         val startSq = sq(3, 4)
         val endSqs = (1..9)
@@ -31,7 +31,7 @@ class ValidMoveHiTests : FunSpec({
         )
     }
 
-    test("Blocked") {
+    test("HI lines are blocked by allied komas") {
         val side = Side.GOTE
         val startSq = sq(3, 4)
         val komas = mapOf(
@@ -57,7 +57,7 @@ class ValidMoveHiTests : FunSpec({
         testRegularMoves(komas, startSq = startSq, endSqs = endSqs)
     }
 
-    test("Captures") {
+    test("HI lines are blocked by opponent komas but can capture them") {
         val side = Side.GOTE
         val startSq = sq(3, 4)
         val komas = mapOf(
@@ -74,16 +74,19 @@ class ValidMoveHiTests : FunSpec({
             TestCase(sq(3, 5), true),
             TestCase(sq(3, 6), true),
             TestCase(sq(3, 7), true),
+            TestCase(sq(3, 8), false),
+            TestCase(sq(1, 4), false),
             TestCase(sq(2, 4), true),
             TestCase(sq(4, 4), true),
             TestCase(sq(5, 4), true),
             TestCase(sq(6, 4), true),
             TestCase(sq(7, 4), true),
+            TestCase(sq(8, 4), false),
         )
         testRegularMoves(komas, startSq = startSq, endSqs = endSqs)
     }
 
-    test("Sente promotions into promotion zone") {
+    test("Sente HI can promote when reaching last 3 rows") {
         val side = Side.SENTE
         val startSq = sq(3, 4)
         val komas = mapOf(startSq to Koma(side, KomaType.HI))
@@ -95,7 +98,7 @@ class ValidMoveHiTests : FunSpec({
         testPromotionMoves(komas, startSq = startSq, endSqs = endSqs)
     }
 
-    test("Gote promotions into promotion zone") {
+    test("Gote HI can promote when reaching last 3 rows") {
         val side = Side.GOTE
         val startSq = sq(3, 4)
         val komas = mapOf(startSq to Koma(side, KomaType.HI))
@@ -107,7 +110,7 @@ class ValidMoveHiTests : FunSpec({
         testPromotionMoves(komas, startSq = startSq, endSqs = endSqs)
     }
 
-    test("Sente promotions from promotion zone") {
+    test("Sente HI can promote when moving out of last 3 rows") {
         val side = Side.SENTE
         val startSq = sq(5, 1)
         val komas = mapOf(startSq to Koma(side, KomaType.HI))
@@ -122,7 +125,7 @@ class ValidMoveHiTests : FunSpec({
         testPromotionMoves(komas, startSq = startSq, endSqs = endSqs)
     }
 
-    test("Gote promotions from promotion zone") {
+    test("Gote HI can promote when moving out of last 3 rows") {
         val side = Side.GOTE
         val startSq = sq(2, 8)
         val komas = mapOf(startSq to Koma(side, KomaType.HI))
