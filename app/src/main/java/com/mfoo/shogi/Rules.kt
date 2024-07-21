@@ -98,12 +98,27 @@ private fun generateDestinations(
         MailboxContent.Invalid -> return emptyList()
         MailboxContent.Empty -> return emptyList()
         is MailboxContent.Koma -> {
-            if (k.value.komaType != KomaType.FU) {
+            val side = k.value.side
+            if (k.value.komaType == KomaType.FU) {
+                return listOf(startIdx + forward(side))
+                    .filterNot { isAllyAtIndex(board, it, side) }
+                    .map(MailboxBoardImpl::sqFromIndex)
+            } else if (k.value.komaType == KomaType.KI) {
+                val forward = forward(side)
+                return listOf(
+                    MailboxCompanion.Direction.N.t,
+                    MailboxCompanion.Direction.S.t,
+                    MailboxCompanion.Direction.E.t,
+                    MailboxCompanion.Direction.W.t,
+                    forward + MailboxCompanion.Direction.E.t,
+                    forward + MailboxCompanion.Direction.W.t,
+                )
+                    .map { dir -> dir + startIdx }
+                    .filterNot { isAllyAtIndex(board, it, side) }
+                    .map(MailboxBoardImpl::sqFromIndex)
+            } else {
                 return emptyList()
             }
-            return listOf(startIdx + forward(k.value.side))
-                .filterNot { isAllyAtIndex(board, it, k.value.side) }
-                .map(MailboxBoardImpl::sqFromIndex)
         }
     }
 }
