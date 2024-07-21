@@ -49,6 +49,18 @@ private fun testRegularMove(
 }
 
 class ValidMoveTests : FunSpec({
+    context("General tests") {
+        test("Should not be able to drop koma if koma not in hand") {
+            val komaType = KomaType.GI
+            val side = Side.SENTE
+            val pos = Pos.empty().incrementHandAmount(side.switch(), komaType)
+            val move = Move.Drop(sq(5, 5), side, komaType)
+            val result = isValid(move, pos)
+            val expected = false
+            result shouldBe expected
+        }
+    }
+
     context("FU moves") {
         test("Sente FU step") {
             val startSq = sq(1, 8)
