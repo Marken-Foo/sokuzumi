@@ -169,38 +169,40 @@ class ValidMoveTests : FunSpec({
         }
 
         test("Blocked sente FU step") {
+            val side = Side.SENTE
             val startSq = sq(1, 8)
-            val endSq = sq(1, 7)
-            val komas = mapOf(
-                startSq to Koma(Side.SENTE, KomaType.FU),
-                endSq to Koma(Side.SENTE, KomaType.GI),
+            val endSqs = listOf(
+                TestCase(sq(1, 7), false),
+                TestCase(sq(1, 9), false),
             )
-            val expected = false
+            val komas = mapOf(
+                startSq to Koma(side, KomaType.FU),
+                sq(1, 7) to Koma(side, KomaType.GI),
+            )
 
-            testRegularMove(
+            testRegularMoves(
                 komas,
                 startSq = startSq,
-                endSq = endSq,
-                isPromotion = false,
-                expected = expected,
+                endSqs = endSqs,
             )
         }
 
         test("Capture sente FU step") {
+            val side = Side.SENTE
             val startSq = sq(1, 8)
-            val endSq = sq(1, 7)
-            val komas = mapOf(
-                startSq to Koma(Side.SENTE, KomaType.FU),
-                endSq to Koma(Side.GOTE, KomaType.GI),
+            val endSqs = listOf(
+                TestCase(sq(1, 7), true),
+                TestCase(sq(1, 9), false),
             )
-            val expected = true
+            val komas = mapOf(
+                startSq to Koma(side, KomaType.FU),
+                sq(1, 7) to Koma(side.switch(), KomaType.GI),
+            )
 
-            testRegularMove(
+            testRegularMoves(
                 komas,
                 startSq = startSq,
-                endSq = endSq,
-                isPromotion = false,
-                expected = expected,
+                endSqs = endSqs,
             )
         }
 
