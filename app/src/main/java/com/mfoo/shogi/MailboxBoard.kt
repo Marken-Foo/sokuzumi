@@ -109,10 +109,14 @@ class MailboxBoardImpl private constructor(
         private const val NUM_COLS = 11
         override fun empty(): Board {
             val mailbox =
-                MutableList(NUM_COLS * NUM_ROWS) { MailboxContent.Empty }
-            (1..9).zip(1..9).map { (x, y) -> Square(Col(x), Row(y)) }
-                .map(Companion::indexFromSq)
-                .forEach { idx -> mailbox.set(idx, MailboxContent.Empty) }
+                MutableList<MailboxContent>(NUM_COLS * NUM_ROWS) { MailboxContent.Invalid }
+            for (col in 1..9) {
+                for (row in 1..9) {
+                    Square(Col(col), Row(row))
+                        .let(::indexFromSq)
+                        .let { mailbox.set(it, MailboxContent.Empty) }
+                }
+            }
             return MailboxBoardImpl(mailbox)
         }
 

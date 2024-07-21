@@ -1,5 +1,7 @@
 package com.mfoo.shogi
 
+import com.mfoo.shogi.MailboxCompanion.Direction
+
 fun canBePromotion(move: Move.Regular): Boolean {
     return move.komaType.isPromotable() &&
         (move.startSq.isInPromotionZone(move.side)
@@ -84,8 +86,8 @@ private fun isRegularMoveValid(move: Move.Regular, pos: PositionImpl): Boolean {
 
 private fun forward(side: Side): Int {
     return when (side) {
-        Side.SENTE -> MailboxCompanion.Direction.N.t
-        Side.GOTE -> MailboxCompanion.Direction.S.t
+        Side.SENTE -> Direction.N.t
+        Side.GOTE -> Direction.S.t
     }
 }
 
@@ -106,16 +108,22 @@ private fun generateDestinations(
             } else if (k.value.komaType == KomaType.KI) {
                 val forward = forward(side)
                 return listOf(
-                    MailboxCompanion.Direction.N.t,
-                    MailboxCompanion.Direction.S.t,
-                    MailboxCompanion.Direction.E.t,
-                    MailboxCompanion.Direction.W.t,
-                    forward + MailboxCompanion.Direction.E.t,
-                    forward + MailboxCompanion.Direction.W.t,
+                    Direction.N.t,
+                    Direction.S.t,
+                    Direction.E.t,
+                    Direction.W.t,
+                    forward + Direction.E.t,
+                    forward + Direction.W.t,
                 )
                     .map { dir -> dir + startIdx }
                     .filterNot { isAllyAtIndex(board, it, side) }
                     .map(MailboxBoardImpl::sqFromIndex)
+            } else if (k.value.komaType == KomaType.HI) {
+                return getSquaresInRay(board, side, startIdx, Direction.N)
+                    .plus(getSquaresInRay(board, side, startIdx, Direction.S))
+                    .plus(getSquaresInRay(board, side, startIdx, Direction.E))
+                    .plus(getSquaresInRay(board, side, startIdx, Direction.W))
+                    .toList()
             } else {
                 return emptyList()
             }
@@ -162,4 +170,35 @@ private fun isNifu(move: Move.Drop, pos: PositionImpl): Boolean {
                 && it.value.komaType == KomaType.FU
                 && it.value.side == move.side
         }
+}
+
+/**
+ * Returns the squares in a ray that extends until it hits an allied unit.
+ */
+fun getSquaresInRay(
+    board: MailboxBoard,
+    side: Side,
+    startIdx: Int,
+    direction: Direction,
+): Iterable<Square> {
+    val res = mutableListOf<Square>()
+
+    for (stepNum in generateSequence(1) { 1 + it }) {
+        val idx = startIdx + direction.t * stepNum
+        when (val content = board.mailbox[idx]) {
+            MailboxContent.Empty -> {
+                res.add(MailboxBoardImpl.sqFromIndex(idx))
+            }
+
+            MailboxContent.Invalid -> break
+            is MailboxContent.Koma -> {
+                if (content.value.side != side) {
+                    res.add(MailboxBoardImpl.sqFromIndex(idx))
+                    break
+                }
+                break
+            }
+        }
+    }
+    return res
 }

@@ -458,6 +458,7 @@ class ValidMoveTests : FunSpec({
                 endSqs = endSqs,
             )
         }
+
         test("Blocked") {
             val side = Side.GOTE
             val startSq = sq(3, 4)
@@ -475,7 +476,7 @@ class ValidMoveTests : FunSpec({
             )
             testRegularMoves(komas, startSq = startSq, endSqs = endSqs)
         }
-        // hi captures
+
         test("Captures") {
             val side = Side.GOTE
             val startSq = sq(3, 4)
