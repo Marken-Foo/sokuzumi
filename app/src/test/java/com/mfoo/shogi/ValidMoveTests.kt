@@ -17,31 +17,6 @@ private fun sq(col: Int, row: Int): Square {
     return Square(Col(col), Row(row))
 }
 
-private fun testRegularMove(
-    komas: Map<Square, Koma>,
-    startSq: Square,
-    endSq: Square,
-    isPromotion: Boolean = false,
-    expected: Boolean,
-) {
-    val koma = komas[startSq]
-    koma shouldNotBe null
-
-    val side = koma!!.side
-    val pos = Pos.fromMap(komas).setSideToMove(side)
-
-    val move = Move.Regular(
-        startSq = startSq,
-        endSq = endSq,
-        isPromotion = isPromotion,
-        side = side,
-        komaType = koma.komaType,
-        capturedKoma = komas[endSq]
-    )
-    val result = isValid(move, pos)
-    result shouldBe expected
-}
-
 private data class TestCase(val sq: Square, val shouldBeValid: Boolean)
 
 private fun testRegularMoves(
@@ -207,35 +182,23 @@ class ValidMoveTests : FunSpec({
         }
 
         test("Sente FU valid promote") {
+            val side = Side.SENTE
             val startSq = sq(5, 4)
-            val endSq = sq(5, 3)
-            val komas = mapOf(
-                startSq to Koma(Side.SENTE, KomaType.FU),
+            val komas = mapOf(startSq to Koma(side, KomaType.FU))
+            val endSqs = setOf(
+                TestCase(sq(5, 3), true),
             )
-            val expected = true
-            testRegularMove(
-                komas,
-                startSq = startSq,
-                endSq = endSq,
-                isPromotion = true,
-                expected = expected,
-            )
+            testPromotionMoves(komas, startSq = startSq, endSqs = endSqs)
         }
 
         test("Sente FU invalid promote") {
+            val side = Side.SENTE
             val startSq = sq(5, 5)
-            val endSq = sq(5, 4)
-            val komas = mapOf(
-                startSq to Koma(Side.SENTE, KomaType.FU),
+            val komas = mapOf(startSq to Koma(side, KomaType.FU))
+            val endSqs = setOf(
+                TestCase(sq(5, 4), false),
             )
-            val expected = false
-            testRegularMove(
-                komas,
-                startSq = startSq,
-                endSq = endSq,
-                isPromotion = true,
-                expected = expected,
-            )
+            testPromotionMoves(komas, startSq = startSq, endSqs = endSqs)
         }
 
         test("Sente FU nifu") {
