@@ -146,7 +146,20 @@ private fun generateDestinations(
                 .map(MailboxBoardImpl::sqFromIndex)
         }
 
-        KomaType.GI -> TODO()
+        KomaType.GI -> {
+            val forward = forward(side)
+            listOf(
+                Direction.NE.t,
+                Direction.SE.t,
+                Direction.SW.t,
+                Direction.NW.t,
+                forward,
+            )
+                .map { dir -> dir + startIdx }
+                .filterNot { isAllyAtIndex(board, it, side) }
+                .map(MailboxBoardImpl::sqFromIndex)
+        }
+
         KomaType.KI, KomaType.TO, KomaType.NY, KomaType.NK, KomaType.NG -> {
             val forward = forward(side)
             listOf(
