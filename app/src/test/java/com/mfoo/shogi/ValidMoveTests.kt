@@ -193,7 +193,6 @@ class ValidMoveTests : FunSpec({
             val expected = false
 
             val pos = Pos.empty()
-                .setKoma(sq, Koma(side, komaType))
                 .setKoma(sq(5, 7), Koma(side, komaType))
                 .incrementHandAmount(side, komaType)
             val move = Move.Drop(
@@ -212,7 +211,6 @@ class ValidMoveTests : FunSpec({
             val expected = true
 
             val pos = Pos.empty()
-                .setKoma(sq, Koma(side, komaType))
                 .setKoma(sq(5, 7), Koma(side.switch(), komaType))
                 .setKoma(sq(5, 6), Koma(side, KomaType.TO))
                 .setKoma(sq(4, 3), Koma(side, komaType))
