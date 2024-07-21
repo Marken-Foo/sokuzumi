@@ -23,7 +23,7 @@ class ValidMoveKeTests : FunSpec({
         testRegularMoves(komas, startSq, endSqs)
     }
 
-    test("Gote KE faces north") {
+    test("Gote KE faces south") {
         val side = Side.GOTE
         val komaType = KomaType.KE
         val startSq = sq(4, 5)
