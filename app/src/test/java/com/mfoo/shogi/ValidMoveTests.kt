@@ -71,7 +71,7 @@ private fun testRegularMoves(
 private fun testPromotionMoves(
     komas: Map<Square, Koma>,
     startSq: Square,
-    endSqs: Iterable<Square>,
+    endSqs: Iterable<TestCase>,
 ) {
     val koma = komas[startSq]
     koma shouldNotBe null
@@ -79,17 +79,17 @@ private fun testPromotionMoves(
     val side = koma!!.side
     val pos = Pos.fromMap(komas).setSideToMove(side)
 
-    val moves = endSqs.map {
-        Move.Regular(
+    endSqs.all { (sq, shouldBeValid) ->
+        val move = Move.Regular(
             startSq = startSq,
-            endSq = it,
+            endSq = sq,
             isPromotion = true,
             side = side,
             komaType = koma.komaType,
-            capturedKoma = komas[it]
+            capturedKoma = komas[sq]
         )
-    }
-    moves.all { move -> isValid(move, pos) } shouldBe true
+        isValid(move, pos) == shouldBeValid
+    } shouldBe true
 }
 
 class ValidMoveTests : FunSpec({
@@ -467,7 +467,9 @@ class ValidMoveTests : FunSpec({
             val startSq = sq(3, 4)
             val komas = mapOf(startSq to Koma(side, KomaType.HI))
             val endSqs = setOf(
-                sq(3, 1), sq(3, 2), sq(3, 3)
+                TestCase(sq(3, 1), true),
+                TestCase(sq(3, 2), true),
+                TestCase(sq(3, 3), true),
             )
             testPromotionMoves(komas, startSq = startSq, endSqs = endSqs)
         }
@@ -477,7 +479,9 @@ class ValidMoveTests : FunSpec({
             val startSq = sq(3, 4)
             val komas = mapOf(startSq to Koma(side, KomaType.HI))
             val endSqs = setOf(
-                sq(3, 7), sq(3, 8), sq(3, 9)
+                TestCase(sq(3, 7), true),
+                TestCase(sq(3, 8), true),
+                TestCase(sq(3, 9), true),
             )
             testPromotionMoves(komas, startSq = startSq, endSqs = endSqs)
         }
@@ -493,6 +497,7 @@ class ValidMoveTests : FunSpec({
                         .plus(Square(Col(n), startSq.row))
                 }
                 .minus(startSq)
+                .map { TestCase(it, true) }
             testPromotionMoves(komas, startSq = startSq, endSqs = endSqs)
         }
 
@@ -507,6 +512,7 @@ class ValidMoveTests : FunSpec({
                         .plus(Square(Col(n), startSq.row))
                 }
                 .minus(startSq)
+                .map { TestCase(it, true) }
             testPromotionMoves(komas, startSq = startSq, endSqs = endSqs)
         }
     }
