@@ -99,49 +99,67 @@ private fun generateDestinations(
     startSq: Square,
 ): List<Square> {
     val startIdx = MailboxBoardImpl.indexFromSq(startSq)
-    when (val k = board.mailbox[startIdx]) {
-        MailboxContent.Invalid -> return emptyList()
-        MailboxContent.Empty -> return emptyList()
-        is MailboxContent.Koma -> {
-            val side = k.value.side
-            return when (k.value.komaType) {
-                KomaType.FU -> {
-                    listOf(startIdx + forward(side))
-                        .filterNot { isAllyAtIndex(board, it, side) }
-                        .map(MailboxBoardImpl::sqFromIndex)
-                }
+    return when (val k = board.mailbox[startIdx]) {
+        MailboxContent.Invalid -> emptyList()
+        MailboxContent.Empty -> emptyList()
+        is MailboxContent.Koma -> generateDestinations(
+            board,
+            startIdx,
+            k.value.side,
+            k.value.komaType
+        )
+    }
+}
 
-                KomaType.KY -> TODO()
-                KomaType.KE -> TODO()
-                KomaType.GI -> TODO()
-                KomaType.KI, KomaType.TO, KomaType.NY, KomaType.NK, KomaType.NG -> {
-                    val forward = forward(side)
-                    return listOf(
-                        Direction.N.t,
-                        Direction.S.t,
-                        Direction.E.t,
-                        Direction.W.t,
-                        forward + Direction.E.t,
-                        forward + Direction.W.t,
-                    )
-                        .map { dir -> dir + startIdx }
-                        .filterNot { isAllyAtIndex(board, it, side) }
-                        .map(MailboxBoardImpl::sqFromIndex)
-                }
-
-                KomaType.KA -> TODO()
-                KomaType.HI -> {
-                    getSquaresInRay(board, side, startIdx, Direction.N)
-                        .plus(getSquaresInRay(board, side, startIdx, Direction.S))
-                        .plus(getSquaresInRay(board, side, startIdx, Direction.E))
-                        .plus(getSquaresInRay(board, side, startIdx, Direction.W))
-                        .toList()
-                }
-                KomaType.OU -> TODO()
-                KomaType.UM -> TODO()
-                KomaType.RY -> TODO()
-            }
+private fun generateDestinations(
+    board: MailboxBoard,
+    startIdx: Int,
+    side: Side,
+    komaType: KomaType,
+): List<Square> {
+    return when (komaType) {
+        KomaType.FU -> {
+            listOf(startIdx + forward(side))
+                .filterNot { isAllyAtIndex(board, it, side) }
+                .map(MailboxBoardImpl::sqFromIndex)
         }
+
+        KomaType.KY -> {
+            val forward = when (side) {
+                Side.SENTE -> Direction.N
+                Side.GOTE -> Direction.S
+            }
+            return getSquaresInRay(board, side, startIdx, forward).toList()
+        }
+        KomaType.KE -> TODO()
+        KomaType.GI -> TODO()
+        KomaType.KI, KomaType.TO, KomaType.NY, KomaType.NK, KomaType.NG -> {
+            val forward = forward(side)
+            listOf(
+                Direction.N.t,
+                Direction.S.t,
+                Direction.E.t,
+                Direction.W.t,
+                forward + Direction.E.t,
+                forward + Direction.W.t,
+            )
+                .map { dir -> dir + startIdx }
+                .filterNot { isAllyAtIndex(board, it, side) }
+                .map(MailboxBoardImpl::sqFromIndex)
+        }
+
+        KomaType.KA -> TODO()
+        KomaType.HI -> {
+            getSquaresInRay(board, side, startIdx, Direction.N)
+                .plus(getSquaresInRay(board, side, startIdx, Direction.S))
+                .plus(getSquaresInRay(board, side, startIdx, Direction.E))
+                .plus(getSquaresInRay(board, side, startIdx, Direction.W))
+                .toList()
+        }
+
+        KomaType.OU -> TODO()
+        KomaType.UM -> TODO()
+        KomaType.RY -> TODO()
     }
 }
 
