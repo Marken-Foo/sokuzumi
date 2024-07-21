@@ -107,7 +107,7 @@ class ValidMoveTests : FunSpec({
     }
 
     context("FU moves") {
-        test("Sente FU step") {
+        test("Sente FU moves north") {
             val side = Side.SENTE
             val startSq = sq(1, 8)
             val endSqs = listOf(
@@ -125,7 +125,7 @@ class ValidMoveTests : FunSpec({
             )
         }
 
-        test("Gote FU step") {
+        test("Gote FU moves south") {
             val side = Side.GOTE
             val startSq = sq(2, 5)
             val endSqs = listOf(
@@ -143,7 +143,7 @@ class ValidMoveTests : FunSpec({
             )
         }
 
-        test("Blocked sente FU step") {
+        test("Sente FU cannot move onto allied koma") {
             val side = Side.SENTE
             val startSq = sq(1, 8)
             val endSqs = listOf(
@@ -162,7 +162,7 @@ class ValidMoveTests : FunSpec({
             )
         }
 
-        test("Capture sente FU step") {
+        test("Sente FU can capture enemy koma") {
             val side = Side.SENTE
             val startSq = sq(1, 8)
             val endSqs = listOf(
@@ -181,7 +181,7 @@ class ValidMoveTests : FunSpec({
             )
         }
 
-        test("Sente FU valid promote") {
+        test("Sente FU can promote when reaching last 3 rows") {
             val side = Side.SENTE
             val startSq = sq(5, 4)
             val komas = mapOf(startSq to Koma(side, KomaType.FU))
@@ -191,7 +191,7 @@ class ValidMoveTests : FunSpec({
             testPromotionMoves(komas, startSq = startSq, endSqs = endSqs)
         }
 
-        test("Sente FU invalid promote") {
+        test("Sente FU cannot promote when not reaching last 3 rows") {
             val side = Side.SENTE
             val startSq = sq(5, 5)
             val komas = mapOf(startSq to Koma(side, KomaType.FU))
@@ -201,7 +201,35 @@ class ValidMoveTests : FunSpec({
             testPromotionMoves(komas, startSq = startSq, endSqs = endSqs)
         }
 
-        test("Sente FU nifu") {
+        test("Gote FU can promote when reaching last 3 rows") {
+            val side = Side.GOTE
+            val startSq = sq(9, 8)
+            val komas = mapOf(startSq to Koma(side, KomaType.FU))
+            val endSqs = setOf(
+                TestCase(sq(9, 9), true),
+            )
+            testPromotionMoves(komas, startSq = startSq, endSqs = endSqs)
+        }
+
+        test("Sente FU must promote when moving to last row") {
+            val side = Side.SENTE
+            val startSq = sq(2, 2)
+            val endSq = sq(2, 1)
+            val komas = mapOf(startSq to Koma(side, KomaType.FU))
+            testPromotionMoves(komas, startSq, listOf(TestCase(endSq, true)))
+            testRegularMoves(komas, startSq, listOf(TestCase(endSq, false)))
+        }
+
+        test("Gote FU must promote when moving to last row") {
+            val side = Side.GOTE
+            val startSq = sq(4, 8)
+            val endSq = sq(4, 9)
+            val komas = mapOf(startSq to Koma(side, KomaType.FU))
+            testPromotionMoves(komas, startSq, listOf(TestCase(endSq, true)))
+            testRegularMoves(komas, startSq, listOf(TestCase(endSq, false)))
+        }
+
+        test("Sente FU nifu is invalid") {
             val side = Side.SENTE
             val komaType = KomaType.FU
             val sq = sq(5, 3)
@@ -219,17 +247,49 @@ class ValidMoveTests : FunSpec({
             result shouldBe expected
         }
 
-        test("Sente legal FU drop") {
+        test("Sente FU can be dropped if not nifu") {
             val side = Side.SENTE
             val komaType = KomaType.FU
             val sq = sq(5, 3)
             val expected = true
 
             val pos = Pos.empty()
-                .setKoma(sq(5, 7), Koma(side.switch(), komaType))
+                .setKoma(sq(5, 7), Koma(side.switch(), KomaType.FU))
                 .setKoma(sq(5, 6), Koma(side, KomaType.TO))
-                .setKoma(sq(4, 3), Koma(side, komaType))
+                .setKoma(sq(4, 3), Koma(side, KomaType.FU))
                 .incrementHandAmount(side, komaType)
+            val move = Move.Drop(
+                sq = sq,
+                side = side,
+                komaType = komaType,
+            )
+            val result = isValid(move, pos)
+            result shouldBe expected
+        }
+
+        test("Sente FU cannot be dropped on last row") {
+            val side = Side.SENTE
+            val komaType = KomaType.FU
+            val sq = sq(4, 1)
+            val expected = false
+
+            val pos = Pos.empty().incrementHandAmount(side, komaType)
+            val move = Move.Drop(
+                sq = sq,
+                side = side,
+                komaType = komaType,
+            )
+            val result = isValid(move, pos)
+            result shouldBe expected
+        }
+
+        test("Gote FU cannot be dropped on last row") {
+            val side = Side.GOTE
+            val komaType = KomaType.FU
+            val sq = sq(6, 9)
+            val expected = false
+
+            val pos = Pos.empty().incrementHandAmount(side, komaType)
             val move = Move.Drop(
                 sq = sq,
                 side = side,
