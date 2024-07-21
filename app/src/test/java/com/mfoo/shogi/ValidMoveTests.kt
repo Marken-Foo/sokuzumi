@@ -24,27 +24,21 @@ private fun testRegularMove(
     isPromotion: Boolean = false,
     expected: Boolean,
 ) {
-    val pos = Pos.fromMap(komas)
     val koma = komas[startSq]
     koma shouldNotBe null
 
     val side = koma!!.side
+    val pos = Pos.fromMap(komas).setSideToMove(side)
 
     val move = Move.Regular(
         startSq = startSq,
         endSq = endSq,
         isPromotion = isPromotion,
-        side = koma.side,
+        side = side,
         komaType = koma.komaType,
         capturedKoma = komas[endSq]
     )
-    val result = isValid(move, pos.let {
-        if (side.isSente()) {
-            it
-        } else {
-            it.toggleSideToMove()
-        }
-    })
+    val result = isValid(move, pos)
     result shouldBe expected
 }
 
@@ -53,32 +47,23 @@ private fun testRegularMoves(
     startSq: Square,
     endSqs: Iterable<Square>,
 ) {
-    val pos = Pos.fromMap(komas)
     val koma = komas[startSq]
     koma shouldNotBe null
 
     val side = koma!!.side
+    val pos = Pos.fromMap(komas).setSideToMove(side)
 
     val moves = endSqs.map {
         Move.Regular(
             startSq = startSq,
             endSq = it,
             isPromotion = false,
-            side = koma.side,
+            side = side,
             komaType = koma.komaType,
             capturedKoma = komas[it]
         )
     }
-    val results = moves.map { move ->
-        isValid(move, pos.let {
-            if (side.isSente()) {
-                it
-            } else {
-                it.toggleSideToMove()
-            }
-        })
-    }
-    results.all { isValid -> isValid } shouldBe true
+    moves.all { move -> isValid(move, pos) } shouldBe true
 }
 
 private fun testPromotionMoves(
@@ -86,32 +71,23 @@ private fun testPromotionMoves(
     startSq: Square,
     endSqs: Iterable<Square>,
 ) {
-    val pos = Pos.fromMap(komas)
     val koma = komas[startSq]
     koma shouldNotBe null
 
     val side = koma!!.side
+    val pos = Pos.fromMap(komas).setSideToMove(side)
 
     val moves = endSqs.map {
         Move.Regular(
             startSq = startSq,
             endSq = it,
             isPromotion = true,
-            side = koma.side,
+            side = side,
             komaType = koma.komaType,
             capturedKoma = komas[it]
         )
     }
-    val results = moves.map { move ->
-        isValid(move, pos.let {
-            if (side.isSente()) {
-                it
-            } else {
-                it.toggleSideToMove()
-            }
-        })
-    }
-    results.all { isValid -> isValid } shouldBe true
+    moves.all { move -> isValid(move, pos) } shouldBe true
 }
 
 class ValidMoveTests : FunSpec({
@@ -155,70 +131,32 @@ class ValidMoveTests : FunSpec({
 
     context("FU moves") {
         test("Sente FU step") {
+            val side = Side.SENTE
             val startSq = sq(1, 8)
-            val endSq = sq(1, 7)
+            val endSqs = listOf(sq(1, 7))
             val komas = mapOf(
-                startSq to Koma(Side.SENTE, KomaType.FU),
+                startSq to Koma(side, KomaType.FU),
             )
-            val expected = true
 
-            testRegularMove(
+            testRegularMoves(
                 komas,
                 startSq = startSq,
-                endSq = endSq,
-                isPromotion = false,
-                expected = expected,
-            )
-        }
-
-        test("Incorrect sente FU step") {
-            val startSq = sq(2, 5)
-            val endSq = sq(2, 6)
-            val komas = mapOf(
-                startSq to Koma(Side.SENTE, KomaType.FU),
-            )
-            val expected = false
-
-            testRegularMove(
-                komas,
-                startSq = startSq,
-                endSq = endSq,
-                isPromotion = false,
-                expected = expected,
+                endSqs = endSqs,
             )
         }
 
         test("Gote FU step") {
+            val side = Side.GOTE
             val startSq = sq(2, 5)
-            val endSq = sq(2, 6)
+            val endSqs = listOf(sq(2, 6))
             val komas = mapOf(
-                startSq to Koma(Side.GOTE, KomaType.FU),
+                startSq to Koma(side, KomaType.FU),
             )
-            val expected = true
 
-            testRegularMove(
+            testRegularMoves(
                 komas,
                 startSq = startSq,
-                endSq = endSq,
-                isPromotion = false,
-                expected = expected,
-            )
-        }
-
-        test("Incorrect gote FU step") {
-            val startSq = sq(1, 8)
-            val endSq = sq(1, 7)
-            val komas = mapOf(
-                startSq to Koma(Side.GOTE, KomaType.FU),
-            )
-            val expected = false
-
-            testRegularMove(
-                komas,
-                startSq = startSq,
-                endSq = endSq,
-                isPromotion = false,
-                expected = expected,
+                endSqs = endSqs,
             )
         }
 
