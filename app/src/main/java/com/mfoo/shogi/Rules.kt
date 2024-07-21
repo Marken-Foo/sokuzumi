@@ -51,7 +51,7 @@ private fun isMoveSideCorrect(move: Move, pos: Position): Boolean {
 }
 
 private fun isDropValid(move: Move.Drop, pos: Position): Boolean {
-    if (isAllyOnSquare(pos, move.sq, move.side)) {
+    if (isSquareOccupied(pos, move.sq)) {
         return false
     }
     if (pos.getHandAmount(move.side, move.komaType) < 1) {
@@ -123,8 +123,8 @@ private fun generateDestinations(
     }
 }
 
-private fun isAllyOnSquare(pos: Position, sq: Square, side: Side): Boolean {
-    return pos.getKoma(sq).fold({ false }, { it?.side == side })
+private fun isSquareOccupied(pos: Position, sq: Square): Boolean {
+    return pos.getKoma(sq).fold({ false }, { it != null })
 }
 
 private fun isAllyAtIndex(board: MailboxBoard, idx: Int, side: Side): Boolean {
