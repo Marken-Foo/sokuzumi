@@ -4,6 +4,27 @@ import arrow.core.Either
 
 interface MailboxBoard {
     val mailbox: List<MailboxContent>
+
+    /**
+     * Returns the content of the column. Useful for nifu detection.
+     */
+    fun getColumn(col: Col): List<MailboxContent>
+}
+
+sealed interface MailboxCompanion {
+    enum class Direction(val t: Int) {
+        N(-11),
+        NE(-10),
+        E(1),
+        SE(12),
+        S(11),
+        SW(10),
+        W(-1),
+        NW(-12)
+    }
+
+    fun indexFromSq(sq: Square): Int
+    fun sqFromIndex(idx: Int): Square
 }
 
 sealed interface MailboxContent {
@@ -47,6 +68,12 @@ class MailboxBoardImpl private constructor(
         return MailboxBoardImpl(mailbox = newMailbox.toList())
     }
 
+    override fun getColumn(col: Col): List<MailboxContent> {
+        return (1..9)
+            .map { NUM_COLS * (it + 1) + (NUM_COLS - 1 - col.int) }
+            .map { mailbox[it] }
+    }
+
     override fun equals(other: Any?): Boolean {
         return if (other is MailboxBoardImpl) {
             this.mailbox == other.mailbox
@@ -77,7 +104,7 @@ class MailboxBoardImpl private constructor(
         }
     }
 
-    companion object : BoardFactory {
+    companion object : BoardFactory, MailboxCompanion {
         private const val NUM_ROWS = 13
         private const val NUM_COLS = 11
         override fun empty(): Board {
@@ -93,7 +120,11 @@ class MailboxBoardImpl private constructor(
             Col(NUM_COLS - 1 - idx % NUM_COLS)
 
         private fun rowFromIndex(idx: Int): Row = Row(idx / NUM_COLS - 1)
-        private fun indexFromSq(sq: Square): Int =
+        override fun indexFromSq(sq: Square): Int =
             NUM_COLS * (sq.row.int + 1) + (NUM_COLS - 1 - sq.col.int)
+
+        override fun sqFromIndex(idx: Int): Square {
+            return Square(colFromIndex(idx), rowFromIndex(idx))
+        }
     }
 }
