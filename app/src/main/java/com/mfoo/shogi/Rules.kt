@@ -18,7 +18,7 @@ private fun Square.isInPromotionZone(side: Side): Boolean {
 private fun Square.isLastRow(side: Side): Boolean {
     return when (side) {
         Side.SENTE -> this.row.int == 1
-        Side.GOTE -> this.row.int == 2
+        Side.GOTE -> this.row.int == 9
     }
 }
 
@@ -59,7 +59,7 @@ private fun isDropValid(move: Move.Drop, pos: Position): Boolean {
     if (pos.getHandAmount(move.side, move.komaType) < 1) {
         return false
     }
-    if (isDeadDrop(move.komaType, move.sq, move.side)) {
+    if (isDeadKoma(move.komaType, move.sq, move.side)) {
         return false
     }
     if (isNifu(move, pos as PositionImpl)) {
@@ -77,6 +77,9 @@ private fun isRegularMoveValid(move: Move.Regular, pos: PositionImpl): Boolean {
         return false
     }
     if (move.isPromotion && !canBePromotion(move)) {
+        return false
+    }
+    if (isDeadKoma(move.komaType, move.endSq, move.side) && !move.isPromotion) {
         return false
     }
 
@@ -143,7 +146,7 @@ private fun isAllyAtIndex(board: MailboxBoard, idx: Int, side: Side): Boolean {
 /**
  * Returns whether the koma on the square will forever have no valid moves.
  */
-private fun isDeadDrop(komaType: KomaType, sq: Square, side: Side): Boolean {
+private fun isDeadKoma(komaType: KomaType, sq: Square, side: Side): Boolean {
     return when (komaType) {
         KomaType.FU, KomaType.KY -> sq.isLastRow(side)
         KomaType.KE -> sq.isLastTwoRows(side)
