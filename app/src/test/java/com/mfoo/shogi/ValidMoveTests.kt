@@ -42,10 +42,12 @@ private fun testRegularMove(
     result shouldBe expected
 }
 
+private data class TestCase(val sq: Square, val shouldBeValid: Boolean)
+
 private fun testRegularMoves(
     komas: Map<Square, Koma>,
     startSq: Square,
-    endSqs: Iterable<Square>,
+    endSqs: Iterable<TestCase>,
 ) {
     val koma = komas[startSq]
     koma shouldNotBe null
@@ -53,17 +55,17 @@ private fun testRegularMoves(
     val side = koma!!.side
     val pos = Pos.fromMap(komas).setSideToMove(side)
 
-    val moves = endSqs.map {
-        Move.Regular(
+    endSqs.all { (sq, shouldBeValid) ->
+        val move = Move.Regular(
             startSq = startSq,
-            endSq = it,
+            endSq = sq,
             isPromotion = false,
             side = side,
             komaType = koma.komaType,
-            capturedKoma = komas[it]
+            capturedKoma = komas[sq]
         )
-    }
-    moves.all { move -> isValid(move, pos) } shouldBe true
+        isValid(move, pos) == shouldBeValid
+    } shouldBe true
 }
 
 private fun testPromotionMoves(
@@ -133,7 +135,10 @@ class ValidMoveTests : FunSpec({
         test("Sente FU step") {
             val side = Side.SENTE
             val startSq = sq(1, 8)
-            val endSqs = listOf(sq(1, 7))
+            val endSqs = listOf(
+                TestCase(sq(1, 7), true),
+                TestCase(sq(1, 9), false),
+            )
             val komas = mapOf(
                 startSq to Koma(side, KomaType.FU),
             )
@@ -148,7 +153,10 @@ class ValidMoveTests : FunSpec({
         test("Gote FU step") {
             val side = Side.GOTE
             val startSq = sq(2, 5)
-            val endSqs = listOf(sq(2, 6))
+            val endSqs = listOf(
+                TestCase(sq(2, 6), true),
+                TestCase(sq(2, 4), false),
+            )
             val komas = mapOf(
                 startSq to Koma(side, KomaType.FU),
             )
@@ -272,12 +280,12 @@ class ValidMoveTests : FunSpec({
             val side = Side.SENTE
             val startSq = sq(7, 8)
             val endSqs = listOf(
-                sq(8, 7),
-                sq(7, 7),
-                sq(6, 7),
-                sq(8, 8),
-                sq(6, 8),
-                sq(7, 9)
+                TestCase(sq(8, 7), true),
+                TestCase(sq(7, 7), true),
+                TestCase(sq(6, 7), true),
+                TestCase(sq(8, 8), true),
+                TestCase(sq(6, 8), true),
+                TestCase(sq(7, 9), true),
             )
             val komas = mapOf(
                 startSq to Koma(side, KomaType.KI),
@@ -294,12 +302,12 @@ class ValidMoveTests : FunSpec({
             val side = Side.GOTE
             val startSq = sq(3, 5)
             val endSqs = listOf(
-                sq(3, 4),
-                sq(4, 5),
-                sq(2, 5),
-                sq(4, 6),
-                sq(3, 6),
-                sq(2, 6)
+                TestCase(sq(3, 4), true),
+                TestCase(sq(4, 5), true),
+                TestCase(sq(2, 5), true),
+                TestCase(sq(4, 6), true),
+                TestCase(sq(3, 6), true),
+                TestCase(sq(2, 6), true),
             )
             val komas = mapOf(
                 startSq to Koma(side, KomaType.KI),
@@ -316,10 +324,12 @@ class ValidMoveTests : FunSpec({
             val side = Side.SENTE
             val startSq = sq(7, 8)
             val endSqs = listOf(
-                sq(8, 7),
-                sq(7, 7),
-                sq(6, 8),
-                sq(7, 9)
+                TestCase(sq(8, 7), true),
+                TestCase(sq(7, 7), true),
+                TestCase(sq(6, 7), false),
+                TestCase(sq(8, 8), false),
+                TestCase(sq(6, 8), true),
+                TestCase(sq(7, 9), true),
             )
             val komas = mapOf(
                 startSq to Koma(side, KomaType.KI),
@@ -338,12 +348,12 @@ class ValidMoveTests : FunSpec({
             val side = Side.SENTE
             val startSq = sq(7, 8)
             val endSqs = listOf(
-                sq(8, 7),
-                sq(7, 7),
-                sq(6, 7),
-                sq(8, 8),
-                sq(6, 8),
-                sq(7, 9)
+                TestCase(sq(8, 7), true),
+                TestCase(sq(7, 7), true),
+                TestCase(sq(6, 7), true),
+                TestCase(sq(8, 8), true),
+                TestCase(sq(6, 8), true),
+                TestCase(sq(7, 9), true),
             )
             val komas = mapOf(
                 startSq to Koma(side, KomaType.KI),
@@ -386,6 +396,7 @@ class ValidMoveTests : FunSpec({
                         .plus(Square(Col(n), startSq.row))
                 }
                 .minus(startSq)
+                .map { TestCase(it, true) }
             val komas = mapOf(
                 startSq to Koma(side, KomaType.HI),
             )
@@ -408,9 +419,17 @@ class ValidMoveTests : FunSpec({
                 sq(7, 4) to Koma(side, KomaType.NY),
             )
             val endSqs = setOf(
-                sq(3, 2), sq(3, 3),
-                sq(3, 5), sq(3, 6),
-                sq(4, 4), sq(5, 4), sq(6, 4),
+                TestCase(sq(3, 1), false),
+                TestCase(sq(3, 2), true),
+                TestCase(sq(3, 3), true),
+                TestCase(sq(3, 5), true),
+                TestCase(sq(3, 6), true),
+                TestCase(sq(3, 7), false),
+                TestCase(sq(2, 4), false),
+                TestCase(sq(4, 4), true),
+                TestCase(sq(5, 4), true),
+                TestCase(sq(6, 4), true),
+                TestCase(sq(7, 4), false),
             )
             testRegularMoves(komas, startSq = startSq, endSqs = endSqs)
         }
@@ -426,10 +445,17 @@ class ValidMoveTests : FunSpec({
                 sq(7, 4) to Koma(side.switch(), KomaType.NY),
             )
             val endSqs = setOf(
-                sq(3, 1), sq(3, 2), sq(3, 3),
-                sq(3, 5), sq(3, 6), sq(3, 7),
-                sq(2, 4),
-                sq(4, 4), sq(5, 4), sq(6, 4), sq(7, 4)
+                TestCase(sq(3, 1), true),
+                TestCase(sq(3, 2), true),
+                TestCase(sq(3, 3), true),
+                TestCase(sq(3, 5), true),
+                TestCase(sq(3, 6), true),
+                TestCase(sq(3, 7), true),
+                TestCase(sq(2, 4), true),
+                TestCase(sq(4, 4), true),
+                TestCase(sq(5, 4), true),
+                TestCase(sq(6, 4), true),
+                TestCase(sq(7, 4), true),
             )
             testRegularMoves(komas, startSq = startSq, endSqs = endSqs)
         }
