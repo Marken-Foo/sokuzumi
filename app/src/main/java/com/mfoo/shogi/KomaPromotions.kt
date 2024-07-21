@@ -37,3 +37,22 @@ fun KomaType.promote(): KomaType {
         KomaType.RY -> KomaType.RY
     }
 }
+
+fun KomaType.demote(): KomaType {
+    return when (this) {
+        KomaType.FU -> KomaType.FU
+        KomaType.KY -> KomaType.KY
+        KomaType.KE -> KomaType.KE
+        KomaType.GI -> KomaType.GI
+        KomaType.KI -> KomaType.KI
+        KomaType.KA -> KomaType.KA
+        KomaType.HI -> KomaType.HI
+        KomaType.OU -> KomaType.OU
+        KomaType.TO -> KomaType.FU
+        KomaType.NY -> KomaType.KY
+        KomaType.NK -> KomaType.KE
+        KomaType.NG -> KomaType.GI
+        KomaType.UM -> KomaType.KA
+        KomaType.RY -> KomaType.HI
+    }
+}

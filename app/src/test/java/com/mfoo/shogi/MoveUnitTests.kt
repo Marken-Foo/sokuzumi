@@ -35,7 +35,7 @@ private fun testCapture(move: Move.Regular, capturedKomaType: KomaType) {
     }
     val expected = Pos.empty()
         .setKoma(move.endSq, Koma(move.side, endKomaType))
-        .incrementHandAmount(move.side, capturedKomaType)
+        .incrementHandAmount(move.side, capturedKomaType.demote())
         .let { if (move.side == Side.SENTE) it.toggleSideToMove() else it }
     result shouldBe expected
 }
@@ -126,6 +126,34 @@ class MoveUnitTests : FunSpec({
         test("Gote capture") {
             val side = Side.GOTE
             val capturedKomaType = KomaType.KE
+            val move = Move.Regular(
+                startSq = Square(Col(9), Row(8)),
+                endSq = Square(Col(9), Row(7)),
+                isPromotion = false,
+                side = side,
+                komaType = KomaType.NY,
+                capturedKoma = Koma(side.switch(), capturedKomaType)
+            )
+            testCapture(move, capturedKomaType)
+        }
+
+        test("Sente capture of promoted koma") {
+            val side = Side.SENTE
+            val capturedKomaType = KomaType.TO
+            val move = Move.Regular(
+                startSq = Square(Col(2), Row(8)),
+                endSq = Square(Col(2), Row(4)),
+                isPromotion = false,
+                side = side,
+                komaType = KomaType.HI,
+                capturedKoma = Koma(side.switch(), capturedKomaType)
+            )
+            testCapture(move, capturedKomaType)
+        }
+
+        test("Gote capture of promoted koma") {
+            val side = Side.GOTE
+            val capturedKomaType = KomaType.NK
             val move = Move.Regular(
                 startSq = Square(Col(9), Row(8)),
                 endSq = Square(Col(9), Row(7)),

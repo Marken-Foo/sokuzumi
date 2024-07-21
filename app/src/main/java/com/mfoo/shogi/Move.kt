@@ -90,7 +90,7 @@ private fun Position.putCapturedKomaInHand(
         { this },
         { k ->
             if (k != null) {
-                this.incrementHandAmount(side, k.komaType)
+                this.incrementHandAmount(side, k.komaType.demote())
             } else {
                 this
             }
