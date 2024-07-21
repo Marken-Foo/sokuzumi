@@ -23,6 +23,7 @@ interface Position {
 
     // Game state functions
     fun getSideToMove(): Side
+    fun setSideToMove(side: Side): Position
     fun toggleSideToMove(): Position
 }
 
@@ -112,6 +113,10 @@ data class PositionImpl(
 
     override fun getSideToMove(): Side {
         return sideToMove
+    }
+
+    override fun setSideToMove(side: Side): Position {
+        return copy(sideToMove = side)
     }
 
     override fun toggleSideToMove(): Position {

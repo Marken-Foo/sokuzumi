@@ -64,6 +64,20 @@ class PositionImplUnitTests : FunSpec({
             result shouldBe Side.SENTE
         }
 
+        test("Set position side to move to sente") {
+            val side = Side.SENTE
+            val sut = PositionImpl.empty().setSideToMove(side)
+            val result = sut.getSideToMove()
+            result shouldBe side
+        }
+
+        test("Set position side to move to gote") {
+            val side = Side.GOTE
+            val sut = PositionImpl.empty().setSideToMove(side)
+            val result = sut.getSideToMove()
+            result shouldBe side
+        }
+
         test("Toggle side to move should change the side to move") {
             val arbitraryPosition = PositionImpl.empty()
             val sut = arbitraryPosition.toggleSideToMove()
