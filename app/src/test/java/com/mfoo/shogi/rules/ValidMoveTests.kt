@@ -1,11 +1,22 @@
-package com.mfoo.shogi
+package com.mfoo.shogi.rules
 
 import arrow.core.fold
+import com.mfoo.shogi.Col
+import com.mfoo.shogi.Koma
+import com.mfoo.shogi.KomaType
+import com.mfoo.shogi.Move
+import com.mfoo.shogi.Position
+import com.mfoo.shogi.PositionFactory
+import com.mfoo.shogi.PositionImpl
+import com.mfoo.shogi.Row
+import com.mfoo.shogi.Side
+import com.mfoo.shogi.Square
+import com.mfoo.shogi.isValid
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
-private val Pos: PositionFactory = PositionImpl
+internal val Pos: PositionFactory = PositionImpl
 
 private fun PositionFactory.fromMap(komas: Map<Square, Koma>): Position {
     return komas.fold(this.empty()) { pos, (sq, koma) ->
@@ -13,13 +24,13 @@ private fun PositionFactory.fromMap(komas: Map<Square, Koma>): Position {
     }
 }
 
-private fun sq(col: Int, row: Int): Square {
+internal fun sq(col: Int, row: Int): Square {
     return Square(Col(col), Row(row))
 }
 
-private data class TestCase(val sq: Square, val shouldBeValid: Boolean)
+internal data class TestCase(val sq: Square, val shouldBeValid: Boolean)
 
-private fun testRegularMoves(
+internal fun testRegularMoves(
     komas: Map<Square, Koma>,
     startSq: Square,
     endSqs: Iterable<TestCase>,
@@ -43,7 +54,7 @@ private fun testRegularMoves(
     } shouldBe true
 }
 
-private fun testPromotionMoves(
+internal fun testPromotionMoves(
     komas: Map<Square, Koma>,
     startSq: Square,
     endSqs: Iterable<TestCase>,
