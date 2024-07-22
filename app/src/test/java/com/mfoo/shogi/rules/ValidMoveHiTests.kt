@@ -57,7 +57,7 @@ class ValidMoveHiTests : FunSpec({
         testRegularMoves(komas, startSq = startSq, endSqs = endSqs)
     }
 
-    test("HI lines are blocked by opponent komas but can capture them") {
+    test("HI lines are blocked by enemy komas but can capture them") {
         val side = Side.GOTE
         val startSq = sq(3, 4)
         val komas = mapOf(
