@@ -6,27 +6,6 @@ private typealias MailboxIdx = Int
 private typealias Displacement = Int
 
 /**
- * Returns the end squares (destinations) of valid moves on the board
- * that start from a given square.
- */
-internal fun getValidDestinations(
-    board: MailboxBoard,
-    startSq: Square,
-): List<Square> {
-    val startIdx = MailboxBoardImpl.indexFromSq(startSq)
-    return when (val k = board.mailbox[startIdx]) {
-        MailboxContent.Invalid -> emptyList()
-        MailboxContent.Empty -> emptyList()
-        is MailboxContent.Koma -> {
-            val (side, komaType) = k.value
-            return getKomaMovement(side, komaType)
-                .getDestinations(board, startIdx, side)
-                .toList()
-        }
-    }
-}
-
-/**
  * A definition for the valid movements of a koma.
  *
  * - Steps: the koma can move to a location at a given displacement

@@ -90,7 +90,6 @@ private fun isSquareOccupied(pos: Position, sq: Square): Boolean {
     return pos.getKoma(sq).fold({ false }, { it != null })
 }
 
-
 /**
  * Returns whether the koma on the square will forever have no valid moves.
  * Useful to determine illegal drop locations for FU, KY, and KE.
@@ -104,6 +103,27 @@ private fun isDeadKoma(komaType: KomaType, sq: Square, side: Side): Boolean {
         KomaType.TO, KomaType.NY, KomaType.NK, KomaType.NG, KomaType.UM,
         KomaType.RY,
         -> false
+    }
+}
+
+/**
+ * Returns the end squares (destinations) of valid moves on the board
+ * that start from a given square.
+ */
+private fun getValidDestinations(
+    board: MailboxBoard,
+    startSq: Square,
+): List<Square> {
+    val startIdx = MailboxBoardImpl.indexFromSq(startSq)
+    return when (val koma = board.mailbox[startIdx]) {
+        MailboxContent.Invalid -> emptyList()
+        MailboxContent.Empty -> emptyList()
+        is MailboxContent.Koma -> {
+            val (side, komaType) = koma.value
+            return getKomaMovement(side, komaType)
+                .getDestinations(board, startIdx, side)
+                .toList()
+        }
     }
 }
 
