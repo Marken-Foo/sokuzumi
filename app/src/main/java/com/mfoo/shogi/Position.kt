@@ -56,7 +56,7 @@ data class PositionImpl(
 
     override fun setHandAmount(
         side: Side, komaType: KomaType, amount: Int,
-    ): Position {
+    ): PositionImpl {
         return when (side) {
             Side.SENTE -> copy(
                 senteHand = this.getHandOfSide(side).setAmount(komaType, amount)
@@ -68,7 +68,7 @@ data class PositionImpl(
         }
     }
 
-    override fun incrementHandAmount(side: Side, komaType: KomaType): Position {
+    override fun incrementHandAmount(side: Side, komaType: KomaType): PositionImpl {
         return when (side) {
             Side.SENTE -> copy(
                 senteHand = this.getHandOfSide(side).increment(komaType)
@@ -80,7 +80,7 @@ data class PositionImpl(
         }
     }
 
-    override fun decrementHandAmount(side: Side, komaType: KomaType): Position {
+    override fun decrementHandAmount(side: Side, komaType: KomaType): PositionImpl {
         return when (side) {
             Side.SENTE -> copy(
                 senteHand = this.getHandOfSide(side).decrement(komaType)
@@ -96,11 +96,11 @@ data class PositionImpl(
         return board.getKoma(sq)
     }
 
-    override fun setKoma(sq: Square, koma: Koma): Position {
+    override fun setKoma(sq: Square, koma: Koma): PositionImpl {
         return copy(board = board.setKoma(sq, koma))
     }
 
-    override fun removeKoma(sq: Square): Position {
+    override fun removeKoma(sq: Square): PositionImpl {
         return copy(board = board.removeKoma(sq))
     }
 
@@ -115,11 +115,11 @@ data class PositionImpl(
         return sideToMove
     }
 
-    override fun setSideToMove(side: Side): Position {
+    override fun setSideToMove(side: Side): PositionImpl {
         return copy(sideToMove = side)
     }
 
-    override fun toggleSideToMove(): Position {
+    override fun toggleSideToMove(): PositionImpl {
         return copy(sideToMove = sideToMove.switch())
     }
 
@@ -147,7 +147,7 @@ data class PositionImpl(
     }
 
     companion object : PositionFactory {
-        override fun empty(): Position {
+        override fun empty(): PositionImpl {
             return PositionImpl(
                 senteHand = HandImpl.empty(),
                 goteHand = HandImpl.empty(),
@@ -156,7 +156,7 @@ data class PositionImpl(
             )
         }
 
-        override fun fromSfen(sfen: String): Position? {
+        override fun fromSfen(sfen: String): PositionImpl? {
             val sfenTree = parseSfen(sfen) ?: return null
             return empty()
                 .let {
@@ -189,7 +189,7 @@ data class PositionImpl(
                 }
         }
 
-        override fun fromBodAst(bodPosition: BodAst.Position): Position {
+        override fun fromBodAst(bodPosition: BodAst.Position): PositionImpl {
             return empty()
                 .let {
                     var pos = it

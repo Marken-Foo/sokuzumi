@@ -33,12 +33,12 @@ fun isLegal(move: Move, pos: PositionImpl): Boolean {
     TODO("implement move legality checking")
 }
 
-fun isValid(move: Move, pos: Position): Boolean {
+fun isValid(move: Move, pos: PositionImpl): Boolean {
     if (!isMoveSideCorrect(move, pos)) {
         return false
     }
     return when (move) {
-        is Move.Regular -> isRegularMoveValid(move, pos as PositionImpl)
+        is Move.Regular -> isRegularMoveValid(move, pos)
         is Move.Drop -> isDropValid(move, pos)
         is Move.GameEnd -> true
     }
@@ -52,7 +52,7 @@ private fun isMoveSideCorrect(move: Move, pos: Position): Boolean {
     }
 }
 
-private fun isDropValid(move: Move.Drop, pos: Position): Boolean {
+private fun isDropValid(move: Move.Drop, pos: PositionImpl): Boolean {
     if (isSquareOccupied(pos, move.sq)) {
         return false
     }
@@ -62,7 +62,7 @@ private fun isDropValid(move: Move.Drop, pos: Position): Boolean {
     if (isDeadKoma(move.komaType, move.sq, move.side)) {
         return false
     }
-    if (isNifu(move, pos as PositionImpl)) {
+    if (isNifu(move, pos)) {
         return false
     }
     return true

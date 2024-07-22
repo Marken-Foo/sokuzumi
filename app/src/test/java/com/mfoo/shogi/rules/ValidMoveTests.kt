@@ -5,8 +5,6 @@ import com.mfoo.shogi.Col
 import com.mfoo.shogi.Koma
 import com.mfoo.shogi.KomaType
 import com.mfoo.shogi.Move
-import com.mfoo.shogi.Position
-import com.mfoo.shogi.PositionFactory
 import com.mfoo.shogi.PositionImpl
 import com.mfoo.shogi.Row
 import com.mfoo.shogi.Side
@@ -16,14 +14,15 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
-internal val Pos: PositionFactory = PositionImpl
+internal val Pos = PositionImpl
 
-private fun PositionFactory.fromMap(komas: Map<Square, Koma>): Position {
+private fun PositionImpl.Companion.fromMap(komas: Map<Square, Koma>): PositionImpl {
     return komas.fold(this.empty()) { pos, (sq, koma) ->
         pos.setKoma(sq, koma)
     }
 }
 
+// Make the tests less verbose
 internal fun sq(col: Int, row: Int): Square {
     return Square(Col(col), Row(row))
 }
