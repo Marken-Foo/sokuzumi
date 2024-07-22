@@ -9,22 +9,22 @@ fun canBePromotion(move: Move.Regular): Boolean {
 
 private fun Square.isInPromotionZone(side: Side): Boolean {
     return when (side) {
-        Side.SENTE -> this.row.int in 1..3
-        Side.GOTE -> this.row.int in 7..9
+        Side.SENTE -> this.row.t in 1..3
+        Side.GOTE -> this.row.t in 7..9
     }
 }
 
 private fun Square.isLastRow(side: Side): Boolean {
     return when (side) {
-        Side.SENTE -> this.row.int == 1
-        Side.GOTE -> this.row.int == 9
+        Side.SENTE -> this.row.t == 1
+        Side.GOTE -> this.row.t == 9
     }
 }
 
 private fun Square.isLastTwoRows(side: Side): Boolean {
     return when (side) {
-        Side.SENTE -> this.row.int in 1..2
-        Side.GOTE -> this.row.int in 8..9
+        Side.SENTE -> this.row.t in 1..2
+        Side.GOTE -> this.row.t in 8..9
     }
 }
 
@@ -119,7 +119,7 @@ private fun getValidDestinations(
         MailboxContent.Invalid -> emptyList()
         MailboxContent.Empty -> emptyList()
         is MailboxContent.Koma -> {
-            val (side, komaType) = koma.value
+            val (side, komaType) = koma.t
             return getKomaMovement(side, komaType)
                 .getDestinations(board, startIdx, side)
                 .toList()
@@ -139,7 +139,7 @@ private fun isNifu(move: Move.Drop, pos: PositionImpl): Boolean {
         .getColumn(move.sq.col)
         .any {
             it is MailboxContent.Koma
-                && it.value.komaType == KomaType.FU
-                && it.value.side == move.side
+                && it.t.komaType == KomaType.FU
+                && it.t.side == move.side
         }
 }

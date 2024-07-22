@@ -24,7 +24,7 @@ data class PosUiState(
     data class SquareXY(val x: Int, val y: Int) {
         constructor(sq: Square) : this(
             x = NUM_COLS - sq.col.int,
-            y = sq.row.int - 1
+            y = sq.row.t - 1
         )
 
         companion object {

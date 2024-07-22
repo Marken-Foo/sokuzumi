@@ -29,7 +29,7 @@ sealed interface MailboxCompanion {
 
 sealed interface MailboxContent {
     @JvmInline
-    value class Koma(val value: com.mfoo.shogi.Koma) : MailboxContent
+    value class Koma(val t: com.mfoo.shogi.Koma) : MailboxContent
     data object Empty : MailboxContent
     data object Invalid : MailboxContent
 }
@@ -50,7 +50,7 @@ class MailboxBoardImpl private constructor(
 ) : Board, MailboxBoard {
     override fun getKoma(sq: Square): Either<Unit, Koma?> {
         return when (val content = mailbox[indexFromSq(sq)]) {
-            is MailboxContent.Koma -> Either.Right(content.value)
+            is MailboxContent.Koma -> Either.Right(content.t)
             is MailboxContent.Empty -> Either.Right(null)
             is MailboxContent.Invalid -> Either.Left(Unit)
         }
@@ -98,7 +98,7 @@ class MailboxBoardImpl private constructor(
                     when (content) {
                         is MailboxContent.Invalid -> ""
                         is MailboxContent.Empty -> " . "
-                        is MailboxContent.Koma -> content.value.toCsa()
+                        is MailboxContent.Koma -> content.t.toCsa()
                     }
                 }
         }
@@ -125,7 +125,7 @@ class MailboxBoardImpl private constructor(
 
         private fun rowFromIndex(idx: Int): Row = Row(idx / NUM_COLS - 1)
         override fun indexFromSq(sq: Square): Int =
-            NUM_COLS * (sq.row.int + 1) + (NUM_COLS - 1 - sq.col.int)
+            NUM_COLS * (sq.row.t + 1) + (NUM_COLS - 1 - sq.col.int)
 
         override fun sqFromIndex(idx: Int): Square {
             return Square(colFromIndex(idx), rowFromIndex(idx))

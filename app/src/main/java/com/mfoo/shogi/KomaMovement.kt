@@ -42,7 +42,7 @@ private fun isAllyAtIndex(
     side: Side,
 ): Boolean {
     val content = board.mailbox[idx]
-    return content is MailboxContent.Koma && content.value.side == side
+    return content is MailboxContent.Koma && content.t.side == side
 }
 
 /**
@@ -63,7 +63,7 @@ private fun getSquaresInRay(
             MailboxContent.Invalid -> break
 
             is MailboxContent.Koma -> {
-                if (content.value.side != side) {
+                if (content.t.side != side) {
                     res.add(MailboxBoardImpl.sqFromIndex(idx))
                 }
                 break
