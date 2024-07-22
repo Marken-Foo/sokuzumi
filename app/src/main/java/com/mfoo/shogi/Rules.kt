@@ -191,7 +191,22 @@ private fun generateDestinations(
                 .toList()
         }
 
-        KomaType.OU -> TODO()
+        KomaType.OU -> {
+            listOf(
+                Direction.N.t,
+                Direction.NE.t,
+                Direction.E.t,
+                Direction.SE.t,
+                Direction.S.t,
+                Direction.SW.t,
+                Direction.W.t,
+                Direction.NW.t,
+            )
+                .map { dir -> dir + startIdx }
+                .filterNot { isAllyAtIndex(board, it, side) }
+                .map(MailboxBoardImpl::sqFromIndex)
+        }
+
         KomaType.UM -> TODO()
         KomaType.RY -> TODO()
     }
