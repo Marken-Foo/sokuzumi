@@ -207,7 +207,24 @@ private fun generateDestinations(
                 .map(MailboxBoardImpl::sqFromIndex)
         }
 
-        KomaType.UM -> TODO()
+        KomaType.UM -> {
+            val kaMoves = getSquaresInRay(board, side, startIdx, Direction.NW)
+                .plus(getSquaresInRay(board, side, startIdx, Direction.NE))
+                .plus(getSquaresInRay(board, side, startIdx, Direction.SE))
+                .plus(getSquaresInRay(board, side, startIdx, Direction.SW))
+                .toList()
+            val orthogonalSteps = listOf(
+                Direction.N.t,
+                Direction.S.t,
+                Direction.E.t,
+                Direction.W.t,
+            )
+                .map { dir -> dir + startIdx }
+                .filterNot { isAllyAtIndex(board, it, side) }
+                .map(MailboxBoardImpl::sqFromIndex)
+            kaMoves.plus(orthogonalSteps)
+        }
+
         KomaType.RY -> TODO()
     }
 }
