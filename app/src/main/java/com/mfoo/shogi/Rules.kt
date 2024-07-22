@@ -175,7 +175,14 @@ private fun generateDestinations(
                 .map(MailboxBoardImpl::sqFromIndex)
         }
 
-        KomaType.KA -> TODO()
+        KomaType.KA -> {
+            getSquaresInRay(board, side, startIdx, Direction.NW)
+                .plus(getSquaresInRay(board, side, startIdx, Direction.NE))
+                .plus(getSquaresInRay(board, side, startIdx, Direction.SE))
+                .plus(getSquaresInRay(board, side, startIdx, Direction.SW))
+                .toList()
+        }
+
         KomaType.HI -> {
             getSquaresInRay(board, side, startIdx, Direction.N)
                 .plus(getSquaresInRay(board, side, startIdx, Direction.S))
