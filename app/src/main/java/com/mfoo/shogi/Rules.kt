@@ -225,7 +225,23 @@ private fun generateDestinations(
             kaMoves.plus(orthogonalSteps)
         }
 
-        KomaType.RY -> TODO()
+        KomaType.RY -> {
+            val hiMoves = getSquaresInRay(board, side, startIdx, Direction.N)
+                .plus(getSquaresInRay(board, side, startIdx, Direction.S))
+                .plus(getSquaresInRay(board, side, startIdx, Direction.E))
+                .plus(getSquaresInRay(board, side, startIdx, Direction.W))
+                .toList()
+            val diagonalSteps = listOf(
+                Direction.NW.t,
+                Direction.NE.t,
+                Direction.SE.t,
+                Direction.SW.t,
+            )
+                .map { dir -> dir + startIdx }
+                .filterNot { isAllyAtIndex(board, it, side) }
+                .map(MailboxBoardImpl::sqFromIndex)
+            hiMoves.plus(diagonalSteps)
+        }
     }
 }
 
