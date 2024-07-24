@@ -10,7 +10,7 @@ data class PosUiState(
     val senteHand: Map<KomaType, Int>,
     val goteHand: Map<KomaType, Int>,
 ) {
-    data class KomaOnBoard(
+    data class BoardKoma(
         val komaType: KomaType,
         val x: Int,
         val y: Int,
@@ -18,12 +18,12 @@ data class PosUiState(
     )
 
     data class BoardState(
-        val komas: List<KomaOnBoard>,
+        val komas: List<BoardKoma>,
     )
 
     data class SquareXY(val x: Int, val y: Int) {
         constructor(sq: Square) : this(
-            x = NUM_COLS - sq.col.int,
+            x = NUM_COLS - sq.col.t,
             y = sq.row.t - 1
         )
 
@@ -37,6 +37,6 @@ data class PosUiState(
         class Square(val t: SquareXY) :
             SelectedElement
 
-        class Koma(val t: com.mfoo.shogi.Koma) : SelectedElement
+        class HandKoma(val t: com.mfoo.shogi.Koma) : SelectedElement
     }
 }

@@ -70,7 +70,7 @@ class MailboxBoardImpl private constructor(
 
     override fun getColumn(col: Col): List<MailboxContent> {
         return (1..9)
-            .map { NUM_COLS * (it + 1) + (NUM_COLS - 1 - col.int) }
+            .map { NUM_COLS * (it + 1) + (NUM_COLS - 1 - col.t) }
             .map { mailbox[it] }
     }
 
@@ -125,7 +125,7 @@ class MailboxBoardImpl private constructor(
 
         private fun rowFromIndex(idx: Int): Row = Row(idx / NUM_COLS - 1)
         override fun indexFromSq(sq: Square): Int =
-            NUM_COLS * (sq.row.t + 1) + (NUM_COLS - 1 - sq.col.int)
+            NUM_COLS * (sq.row.t + 1) + (NUM_COLS - 1 - sq.col.t)
 
         override fun sqFromIndex(idx: Int): Square {
             return Square(colFromIndex(idx), rowFromIndex(idx))

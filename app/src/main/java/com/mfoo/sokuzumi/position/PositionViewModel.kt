@@ -4,11 +4,14 @@ import androidx.lifecycle.ViewModel
 import com.mfoo.shogi.Col
 import com.mfoo.shogi.Koma
 import com.mfoo.shogi.KomaType
+import com.mfoo.shogi.Move
 import com.mfoo.shogi.Position
 import com.mfoo.shogi.PositionImpl
 import com.mfoo.shogi.Row
 import com.mfoo.shogi.Side
 import com.mfoo.shogi.Square
+import com.mfoo.shogi.doMove
+import com.mfoo.shogi.isValid
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,24 +25,28 @@ class PositionViewModel : ViewModel() {
         MutableStateFlow(_vm.toPositionUiState())
     val uiState: StateFlow<PosUiState> = _uiState.asStateFlow()
 
+    private fun refresh() {
+        _uiState.update { _vm.toPositionUiState() }
+    }
+
     fun cancelSelection() {
         _vm.cancelSelection()
-        _uiState.update { _vm.toPositionUiState() }
+        refresh()
     }
 
     fun onSquareClick(x: Int, y: Int) {
         _vm.onSquareClick(x, y)
-        _uiState.update { _vm.toPositionUiState() }
+        refresh()
     }
 
     fun onSenteHandClick(komaType: KomaType) {
         _vm.onSenteHandClick(komaType)
-        _uiState.update { _vm.toPositionUiState() }
+        refresh()
     }
 
     fun onGoteHandClick(komaType: KomaType) {
         _vm.onGoteHandClick(komaType)
-        _uiState.update { _vm.toPositionUiState() }
+        refresh()
     }
 }
 
@@ -49,28 +56,30 @@ class PositionVM() {
     private sealed interface Selected {
         data object None : Selected
         class Square(val t: com.mfoo.shogi.Square) : Selected
-        class Koma(val side: Side, val komaType: KomaType) : Selected
+        class HandKoma(val side: Side, val komaType: KomaType) : Selected
     }
 
     // val tempSfen = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"
     val tempSfen =
         "5+N2l/1+R1p3k1/2+N1p2p1/L4p2p/2Pr1np2/3gP3P/p4PPP1/5SK2/5G1NL b 2G2S4P2bslp 87"
-    private var pos: Position =
+    private var pos: PositionImpl =
         PositionImpl.fromSfen(tempSfen)
             ?: PositionImpl.empty()
 
-    private var selectedItem: Selected = Selected.None
+    private var selection: Selected = Selected.None
 
     private fun xYToSquare(x: Int, y: Int): Square {
         val numCols = 9
         return Square(Col(numCols - x), Row(y + 1))
     }
 
-    private fun calculateBoardState(position: Position): PosUiState.BoardState {
-        val allKomas = position.getAllKoma().map { (sq, koma) ->
-            val (x, y) = PosUiState.SquareXY(sq)
-            PosUiState.KomaOnBoard(koma.komaType, x, y, !koma.side.isSente())
-        }
+    private fun calculateBoardState(pos: Position): PosUiState.BoardState {
+        val allKomas = pos
+            .getAllKoma()
+            .map { (sq, k) ->
+                val (x, y) = PosUiState.SquareXY(sq)
+                PosUiState.BoardKoma(k.komaType, x, y, !k.side.isSente())
+            }
         return PosUiState.BoardState(allKomas)
     }
 
@@ -81,7 +90,7 @@ class PositionVM() {
                 selected.t.let(PosUiState::SquareXY)
             )
 
-            is Selected.Koma -> PosUiState.SelectedElement.Koma(
+            is Selected.HandKoma -> PosUiState.SelectedElement.HandKoma(
                 Koma(selected.side, selected.komaType)
             )
         }
@@ -90,60 +99,100 @@ class PositionVM() {
     fun toPositionUiState(): PosUiState {
         return PosUiState(
             calculateBoardState(pos),
-            toUiSelection(selectedItem),
+            toUiSelection(selection),
             senteHand = pos.getHandOfSide(Side.SENTE).getAmounts(),
             goteHand = pos.getHandOfSide(Side.GOTE).getAmounts(),
         )
     }
 
     fun cancelSelection() {
-        selectedItem = Selected.None
+        selection = Selected.None
     }
 
     fun onSquareClick(x: Int, y: Int) {
         val sq = xYToSquare(x, y)
 
-        when (val item = selectedItem) {
+        when (val currentSelection = selection) {
             is Selected.None -> {
-                selectedItem = Selected.Square(sq)
+                val koma = pos.getKoma(sq).getOrNull() ?: return
+                if (pos.getSideToMove() == koma.side) {
+                    this.selection = Selected.Square(sq)
+                }
+                return
             }
 
-            is Selected.Square ->
-                if (item.t == sq) {
-                    selectedItem = Selected.None
-                } else {
-                    //TODO: make a move out of selectedsquare.t and sq
-                    selectedItem = Selected.None
+            is Selected.Square -> {
+                if (currentSelection.t == sq) {
+                    this.selection = Selected.None
+                    return
+                }
+                val koma = pos.getKoma(currentSelection.t).getOrNull() ?: return
+                if (pos.getSideToMove() != koma.side) {
+                    this.selection = Selected.None
+                    return
                 }
 
-            is Selected.Koma -> {
-                //TODO: See if the drop makes a move
-                selectedItem = Selected.None
+                //TODO: isPromotion should be prompted if necessary
+                val candidateMove = Move.Regular(
+                    currentSelection.t,
+                    sq,
+                    false,
+                    koma.side,
+                    koma.komaType,
+                    capturedKoma = pos.getKoma(sq).getOrNull()
+                )
+
+                //TODO: should be isLegal()
+                if (isValid(candidateMove, pos)) {
+                    pos = pos.doMove(candidateMove) as PositionImpl
+                    this.selection = Selected.None
+                } else {
+                    this.selection = Selected.Square(sq)
+                }
+            }
+
+            is Selected.HandKoma -> {
+                val candidateMove = Move.Drop(
+                    sq,
+                    currentSelection.side,
+                    currentSelection.komaType
+                )
+                if (isValid(candidateMove, pos)) {
+                    //TODO: should be isLegal()
+                    pos = pos.doMove(candidateMove) as PositionImpl
+                    this.selection = Selected.None
+                } else {
+                    this.selection = Selected.Square(sq)
+                }
             }
         }
     }
 
     fun onSenteHandClick(komaType: KomaType) {
-        val currentSelected = selectedItem
-        if (currentSelected is Selected.Koma
+        val currentSelected = selection
+        if (pos.getSideToMove() != Side.SENTE) {
+            return
+        } else if (currentSelected is Selected.HandKoma
             && currentSelected.side == Side.SENTE
             && currentSelected.komaType == komaType
         ) {
-            selectedItem = Selected.None
+            selection = Selected.None
         } else {
-            selectedItem = Selected.Koma(Side.SENTE, komaType)
+            selection = Selected.HandKoma(Side.SENTE, komaType)
         }
     }
 
     fun onGoteHandClick(komaType: KomaType) {
-        val currentSelected = selectedItem
-        if (currentSelected is Selected.Koma
+        val currentSelected = selection
+        if (pos.getSideToMove() != Side.GOTE) {
+            return
+        } else if (currentSelected is Selected.HandKoma
             && currentSelected.side == Side.GOTE
             && currentSelected.komaType == komaType
         ) {
-            selectedItem = Selected.None
+            selection = Selected.None
         } else {
-            selectedItem = Selected.Koma(Side.GOTE, komaType)
+            selection = Selected.HandKoma(Side.GOTE, komaType)
         }
     }
 }

@@ -62,7 +62,7 @@ data class Koma(val side: Side, val komaType: KomaType) {
 value class Row(val t: Int)
 
 @JvmInline
-value class Col(val int: Int)
+value class Col(val t: Int)
 
 /**
  * Represents a square on a shogi board.
@@ -72,7 +72,7 @@ value class Col(val int: Int)
  */
 data class Square(val col: Col, val row: Row) {
     override fun toString(): String {
-        return "Sq(${col.int}${row.t})"
+        return "Sq(${col.t}${row.t})"
     }
 
     companion object {

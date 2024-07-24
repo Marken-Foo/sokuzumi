@@ -23,7 +23,7 @@ fun Position(
     }) {
         val positionUiState by positionViewModel.uiState.collectAsState()
         val (selectedHandSide, selectedHandKomaType) = positionUiState.selection.let {
-            if (it is PosUiState.SelectedElement.Koma) {
+            if (it is PosUiState.SelectedElement.HandKoma) {
                 Pair(it.t.side, it.t.komaType)
             } else {
                 Pair(null, null)
