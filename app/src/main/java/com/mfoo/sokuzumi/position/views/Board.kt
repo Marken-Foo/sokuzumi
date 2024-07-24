@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -26,8 +25,12 @@ import com.mfoo.sokuzumi.position.PositionViewModel
 
 // Contains just the (9x9) shogi board and komas on it
 @Composable
-fun Board(positionViewModel: PositionViewModel, modifier: Modifier = Modifier) {
-    val positionUiState by positionViewModel.uiState.collectAsState()
+fun Board(
+    board: PosUiState.BoardState,
+    selection: PosUiState.SelectedElement,
+    onSquareClick: (Int, Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val lineThickness = 1.dp
     BoxWithConstraints(modifier = modifier.aspectRatio(11f / 12)) {
         val numCols = 9
@@ -56,9 +59,8 @@ fun Board(positionViewModel: PositionViewModel, modifier: Modifier = Modifier) {
             Modifier.size(boardWidth, boardHeight)
         )
 
-        val selected = positionUiState.selection
-        if (selected is PosUiState.SelectedElement.Square) {
-            val selectedSq = selected.t
+        if (selection is PosUiState.SelectedElement.Square) {
+            val selectedSq = selection.t
             Box(
                 modifier = Modifier
                     .width(sqWidth)
@@ -68,7 +70,7 @@ fun Board(positionViewModel: PositionViewModel, modifier: Modifier = Modifier) {
             )
         }
 
-        for (k in positionUiState.board.komas) {
+        for (k in board.komas) {
             Koma(
                 k.komaType,
                 k.isUpsideDown,
@@ -89,7 +91,7 @@ fun Board(positionViewModel: PositionViewModel, modifier: Modifier = Modifier) {
                         .offset(sqX(x), sqY(y))
                         .background(Color.Transparent)
                         .noRippleClickable {
-                            positionViewModel.onSquareClick(x, y)
+                            onSquareClick(x, y)
                         }
                 )
             }
@@ -109,5 +111,7 @@ private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
 @Preview(showBackground = true)
 @Composable
 fun BoardPreview() {
-    Board(PositionViewModel())
+    val vm = PositionViewModel()
+    val uiState = vm.uiState.collectAsState().value
+    Board(uiState.board, uiState.selection, vm::onSquareClick)
 }

@@ -34,7 +34,12 @@ fun Position(
             onClick = positionViewModel::onGoteHandClick,
             selected = if (selectedHandSide == Side.GOTE) selectedHandKomaType else null,
         )
-        Board(positionViewModel, modifier)
+        Board(
+            positionUiState.board,
+            positionUiState.selection,
+            positionViewModel::onSquareClick,
+            modifier,
+        )
         Hand(
             handAmounts = positionUiState.senteHand,
             onClick = positionViewModel::onSenteHandClick,
