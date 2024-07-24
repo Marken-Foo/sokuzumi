@@ -114,8 +114,7 @@ class PositionVM() {
 
         when (val currentSelection = selection) {
             is Selected.None -> {
-                val koma = pos.getKoma(sq).getOrNull() ?: return
-                if (pos.getSideToMove() == koma.side) {
+                if (isAllyOnSquare(pos.getSideToMove(), sq, pos)) {
                     this.selection = Selected.Square(sq)
                 }
                 return
@@ -147,7 +146,11 @@ class PositionVM() {
                     pos = pos.doMove(candidateMove) as PositionImpl
                     this.selection = Selected.None
                 } else {
-                    this.selection = Selected.Square(sq)
+                    if (isAllyOnSquare(pos.getSideToMove(), sq, pos)) {
+                        this.selection = Selected.Square(sq)
+                    } else {
+                        this.selection = Selected.None
+                    }
                 }
             }
 
@@ -162,10 +165,19 @@ class PositionVM() {
                     pos = pos.doMove(candidateMove) as PositionImpl
                     this.selection = Selected.None
                 } else {
-                    this.selection = Selected.Square(sq)
+                    if (isAllyOnSquare(pos.getSideToMove(), sq, pos)) {
+                        this.selection = Selected.Square(sq)
+                    } else {
+                        this.selection = Selected.None
+                    }
                 }
             }
         }
+    }
+
+    private fun isAllyOnSquare(side: Side, sq: Square, pos: Position): Boolean {
+        val koma = pos.getKoma(sq).getOrNull()
+        return koma != null && side == koma.side
     }
 
     fun onSenteHandClick(komaType: KomaType) {
