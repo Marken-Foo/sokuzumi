@@ -9,8 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.zIndex
 import com.mfoo.shogi.Side
-import com.mfoo.sokuzumi.position.PosUiState
 import com.mfoo.sokuzumi.position.PositionViewModel
+import com.mfoo.sokuzumi.position.SelectedElement
 
 @Composable
 fun Position(
@@ -24,7 +24,7 @@ fun Position(
     }) {
         val positionUiState by positionViewModel.uiState.collectAsState()
         val (selectedHandSide, selectedHandKomaType) = positionUiState.selection.let {
-            if (it is PosUiState.SelectedElement.HandKoma) {
+            if (it is SelectedElement.HandKoma) {
                 Pair(it.t.side, it.t.komaType)
             } else {
                 Pair(null, null)

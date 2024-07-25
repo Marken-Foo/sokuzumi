@@ -21,15 +21,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mfoo.shogi.promote
-import com.mfoo.sokuzumi.position.PosUiState
+import com.mfoo.sokuzumi.position.BoardKoma
+import com.mfoo.sokuzumi.position.BoardState
 import com.mfoo.sokuzumi.position.PositionViewModel
+import com.mfoo.sokuzumi.position.SelectedElement
+import com.mfoo.sokuzumi.position.SquareXY
 
 // Contains just the (9x9) shogi board and komas on it
 @Composable
 fun Board(
-    board: PosUiState.BoardState,
-    selection: PosUiState.SelectedElement,
-    promotionPrompt: PosUiState.BoardKoma?,
+    board: BoardState,
+    selection: SelectedElement,
+    promotionPrompt: Pair<SquareXY, BoardKoma>?,
     onSquareClick: (Int, Int) -> Unit,
     onCancel: () -> Unit,
     onPromote: () -> Unit,
@@ -64,7 +67,7 @@ fun Board(
             Modifier.size(boardWidth, boardHeight)
         )
 
-        if (selection is PosUiState.SelectedElement.Square) {
+        if (selection is SelectedElement.Square) {
             val selectedSq = selection.t
             Box(
                 modifier = Modifier
@@ -75,14 +78,14 @@ fun Board(
             )
         }
 
-        for (k in board.komas) {
+        for ((sqXY, k) in board.t) {
             Koma(
                 k.komaType,
                 k.isUpsideDown,
                 modifier = Modifier
                     .width(sqWidth)
                     .height(sqHeight)
-                    .offset(sqX(k.x), sqY(k.y))
+                    .offset(sqX(sqXY.x), sqY(sqXY.y))
             )
         }
 
@@ -103,6 +106,7 @@ fun Board(
         }
 
         promotionPrompt?.let {
+            val (sqXY, k) = it
             Box(
                 modifier = Modifier
                     .width(boardWidth)
@@ -111,26 +115,27 @@ fun Board(
                     .noRippleClickable(onCancel)
             )
             Koma(
-                it.komaType.promote(),
-                it.isUpsideDown,
+                k.komaType.promote(),
+                k.isUpsideDown,
                 modifier = Modifier
                     .width(sqWidth)
                     .height(sqHeight)
-                    .offset(sqX(it.x), sqY(it.y))
+                    .offset(sqX(sqXY.x), sqY(sqXY.y))
                     .noRippleClickable(onPromote)
             )
             Koma(
-                it.komaType,
-                it.isUpsideDown,
+                k.komaType,
+                k.isUpsideDown,
                 modifier = Modifier
                     .width(sqWidth)
                     .height(sqHeight)
                     .offset(
-                        sqX(it.x), sqY(
-                            if (it.isUpsideDown) {
-                                it.y - 1
+                        sqX(sqXY.x),
+                        sqY(
+                            if (k.isUpsideDown) {
+                                sqXY.y - 1
                             } else {
-                                it.y + 1
+                                sqXY.y + 1
                             }
                         ),
                     )
