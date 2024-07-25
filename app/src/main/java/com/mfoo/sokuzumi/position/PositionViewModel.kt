@@ -10,6 +10,7 @@ import com.mfoo.shogi.PositionImpl
 import com.mfoo.shogi.Row
 import com.mfoo.shogi.Side
 import com.mfoo.shogi.Square
+import com.mfoo.shogi.canBePromotion
 import com.mfoo.shogi.doMove
 import com.mfoo.shogi.isValid
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,6 +49,16 @@ class PositionViewModel : ViewModel() {
         _vm.onGoteHandClick(komaType)
         refresh()
     }
+
+    fun onPromote() {
+        _vm.onPromote()
+        refresh()
+    }
+
+    fun onUnpromote() {
+        _vm.onUnpromote()
+        refresh()
+    }
 }
 
 
@@ -59,6 +70,8 @@ class PositionVM() {
         class HandKoma(val side: Side, val komaType: KomaType) : Selected
     }
 
+    private data class PromotionInfo(val move: Move.Regular)
+
     // val tempSfen = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"
     val tempSfen =
         "5+N2l/1+R1p3k1/2+N1p2p1/L4p2p/2Pr1np2/3gP3P/p4PPP1/5SK2/5G1NL b 2G2S4P2bslp 87"
@@ -67,6 +80,7 @@ class PositionVM() {
             ?: PositionImpl.empty()
 
     private var selection: Selected = Selected.None
+    private var pendingPromotion: PromotionInfo? = null
 
     private fun xYToSquare(x: Int, y: Int): Square {
         val numCols = 9
@@ -102,76 +116,94 @@ class PositionVM() {
             toUiSelection(selection),
             senteHand = pos.getHandOfSide(Side.SENTE).getAmounts(),
             goteHand = pos.getHandOfSide(Side.GOTE).getAmounts(),
+            promotionPrompt = pendingPromotion?.let {
+                val (x, y) = PosUiState.SquareXY(it.move.endSq)
+                PosUiState.BoardKoma(
+                    it.move.komaType,
+                    x,
+                    y,
+                    isUpsideDown = !it.move.side.isSente()
+                )
+            }
         )
     }
 
     fun cancelSelection() {
         selection = Selected.None
+        pendingPromotion = null
     }
 
     fun onSquareClick(x: Int, y: Int) {
         val sq = xYToSquare(x, y)
 
-        when (val currentSelection = selection) {
+        when (val prevSelection = selection) {
             is Selected.None -> {
-                if (isAllyOnSquare(pos.getSideToMove(), sq, pos)) {
-                    this.selection = Selected.Square(sq)
-                }
+                selectSquareIfAlly(sq)
                 return
             }
 
             is Selected.Square -> {
-                if (currentSelection.t == sq) {
+                val move = makeMoveFromSquares(pos, prevSelection.t, sq)
+                if (move == null) {
                     this.selection = Selected.None
                     return
                 }
-                val koma = pos.getKoma(currentSelection.t).getOrNull() ?: return
-                if (pos.getSideToMove() != koma.side) {
-                    this.selection = Selected.None
-                    return
-                }
-
-                //TODO: isPromotion should be prompted if necessary
-                val candidateMove = Move.Regular(
-                    currentSelection.t,
-                    sq,
-                    false,
-                    koma.side,
-                    koma.komaType,
-                    capturedKoma = pos.getKoma(sq).getOrNull()
-                )
-
-                //TODO: should be isLegal()
-                if (isValid(candidateMove, pos)) {
-                    pos = pos.doMove(candidateMove) as PositionImpl
-                    this.selection = Selected.None
-                } else {
-                    if (isAllyOnSquare(pos.getSideToMove(), sq, pos)) {
-                        this.selection = Selected.Square(sq)
-                    } else {
+                if (!canBePromotion(move)) {
+                    return if (isValid(move, pos)) {
+                        pos = pos.doMove(move) as PositionImpl
                         this.selection = Selected.None
+                    } else {
+                        selectSquareIfAlly(sq)
                     }
+                }
+
+                val promotion = move.copy(isPromotion = true)
+                val isPromotionValid = isValid(promotion, pos)
+                val isUnpromotionValid = isValid(move, pos)
+
+                if (isPromotionValid && isUnpromotionValid) {
+                    pendingPromotion = PromotionInfo(move)
+                    this.selection = Selected.None
+                    return
+                }
+                if (isPromotionValid && !isUnpromotionValid) {
+                    this.selection = Selected.None
+                    pos = pos.doMove(promotion) as PositionImpl
+                    return
+                }
+                if (!isPromotionValid && isUnpromotionValid) {
+                    this.selection = Selected.None
+                    pos = pos.doMove(move) as PositionImpl
+                    return
+                }
+                if (!isPromotionValid && !isUnpromotionValid) {
+                    selectSquareIfAlly(sq)
+                    return
                 }
             }
 
             is Selected.HandKoma -> {
-                val candidateMove = Move.Drop(
+                val move = Move.Drop(
                     sq,
-                    currentSelection.side,
-                    currentSelection.komaType
+                    prevSelection.side,
+                    prevSelection.komaType
                 )
-                if (isValid(candidateMove, pos)) {
+                if (isValid(move, pos)) {
                     //TODO: should be isLegal()
-                    pos = pos.doMove(candidateMove) as PositionImpl
+                    pos = pos.doMove(move) as PositionImpl
                     this.selection = Selected.None
                 } else {
-                    if (isAllyOnSquare(pos.getSideToMove(), sq, pos)) {
-                        this.selection = Selected.Square(sq)
-                    } else {
-                        this.selection = Selected.None
-                    }
+                    selectSquareIfAlly(sq)
                 }
             }
+        }
+    }
+
+    private fun selectSquareIfAlly(sq: Square) {
+        this.selection = if (isAllyOnSquare(pos.getSideToMove(), sq, pos)) {
+            Selected.Square(sq)
+        } else {
+            Selected.None
         }
     }
 
@@ -184,13 +216,14 @@ class PositionVM() {
         val currentSelected = selection
         if (pos.getSideToMove() != Side.SENTE) {
             return
-        } else if (currentSelected is Selected.HandKoma
+        }
+        this.selection = if (currentSelected is Selected.HandKoma
             && currentSelected.side == Side.SENTE
             && currentSelected.komaType == komaType
         ) {
-            selection = Selected.None
+            Selected.None
         } else {
-            selection = Selected.HandKoma(Side.SENTE, komaType)
+            Selected.HandKoma(Side.SENTE, komaType)
         }
     }
 
@@ -198,13 +231,57 @@ class PositionVM() {
         val currentSelected = selection
         if (pos.getSideToMove() != Side.GOTE) {
             return
-        } else if (currentSelected is Selected.HandKoma
+        }
+        this.selection = if (currentSelected is Selected.HandKoma
             && currentSelected.side == Side.GOTE
             && currentSelected.komaType == komaType
         ) {
-            selection = Selected.None
+            Selected.None
         } else {
-            selection = Selected.HandKoma(Side.GOTE, komaType)
+            Selected.HandKoma(Side.GOTE, komaType)
         }
     }
+
+    fun onPromote() {
+        val unpromotion = pendingPromotion?.move
+        if (unpromotion == null) {
+            // should not be the case, should signal error
+            return
+        }
+        val move = unpromotion.copy(isPromotion = true)
+        pos = pos.doMove(move) as PositionImpl
+        pendingPromotion = null
+    }
+
+    fun onUnpromote() {
+        val move = pendingPromotion?.move
+        if (move == null) {
+            // should not be the case, should signal error
+            return
+        }
+        pos = pos.doMove(move) as PositionImpl
+        pendingPromotion = null
+    }
+}
+
+private fun makeMoveFromSquares(
+    pos: Position,
+    startSq: Square,
+    endSq: Square,
+): Move.Regular? {
+    if (startSq == endSq) {
+        return null
+    }
+    val koma = pos.getKoma(startSq).getOrNull() ?: return null
+    if (pos.getSideToMove() != koma.side) {
+        return null
+    }
+    return Move.Regular(
+        startSq,
+        endSq,
+        false,
+        koma.side,
+        koma.komaType,
+        capturedKoma = pos.getKoma(endSq).getOrNull()
+    )
 }

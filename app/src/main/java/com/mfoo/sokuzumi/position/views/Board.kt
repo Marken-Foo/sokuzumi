@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.mfoo.shogi.promote
 import com.mfoo.sokuzumi.position.PosUiState
 import com.mfoo.sokuzumi.position.PositionViewModel
 
@@ -28,7 +29,11 @@ import com.mfoo.sokuzumi.position.PositionViewModel
 fun Board(
     board: PosUiState.BoardState,
     selection: PosUiState.SelectedElement,
+    promotionPrompt: PosUiState.BoardKoma?,
     onSquareClick: (Int, Int) -> Unit,
+    onCancel: () -> Unit,
+    onPromote: () -> Unit,
+    onUnpromote: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val lineThickness = 1.dp
@@ -96,6 +101,42 @@ fun Board(
                 )
             }
         }
+
+        promotionPrompt?.let {
+            Box(
+                modifier = Modifier
+                    .width(boardWidth)
+                    .height(boardHeight)
+                    .background(Color(255, 255, 255, 153))
+                    .noRippleClickable(onCancel)
+            )
+            Koma(
+                it.komaType.promote(),
+                it.isUpsideDown,
+                modifier = Modifier
+                    .width(sqWidth)
+                    .height(sqHeight)
+                    .offset(sqX(it.x), sqY(it.y))
+                    .noRippleClickable(onPromote)
+            )
+            Koma(
+                it.komaType,
+                it.isUpsideDown,
+                modifier = Modifier
+                    .width(sqWidth)
+                    .height(sqHeight)
+                    .offset(
+                        sqX(it.x), sqY(
+                            if (it.isUpsideDown) {
+                                it.y - 1
+                            } else {
+                                it.y + 1
+                            }
+                        ),
+                    )
+                    .noRippleClickable(onUnpromote)
+            )
+        }
     }
 }
 
@@ -113,5 +154,13 @@ private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
 fun BoardPreview() {
     val vm = PositionViewModel()
     val uiState = vm.uiState.collectAsState().value
-    Board(uiState.board, uiState.selection, vm::onSquareClick)
+    Board(
+        uiState.board,
+        uiState.selection,
+        uiState.promotionPrompt,
+        onSquareClick = vm::onSquareClick,
+        onCancel = vm::cancelSelection,
+        onPromote = vm::onPromote,
+        onUnpromote = vm::onUnpromote,
+    )
 }

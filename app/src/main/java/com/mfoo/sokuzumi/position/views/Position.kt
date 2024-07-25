@@ -7,6 +7,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
 import com.mfoo.shogi.Side
 import com.mfoo.sokuzumi.position.PosUiState
 import com.mfoo.sokuzumi.position.PositionViewModel
@@ -37,8 +38,14 @@ fun Position(
         Board(
             positionUiState.board,
             positionUiState.selection,
-            positionViewModel::onSquareClick,
-            modifier,
+            positionUiState.promotionPrompt,
+            onSquareClick = positionViewModel::onSquareClick,
+            onCancel = positionViewModel::cancelSelection,
+            onPromote = positionViewModel::onPromote,
+            onUnpromote = positionViewModel::onUnpromote,
+            // zIndex higher than hands for promotion prompt at edge
+            // of board to be above hand koma
+            modifier.zIndex(2f),
         )
         Hand(
             handAmounts = positionUiState.senteHand,

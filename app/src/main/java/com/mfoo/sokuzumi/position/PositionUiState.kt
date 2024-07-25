@@ -9,6 +9,7 @@ data class PosUiState(
     val selection: SelectedElement = SelectedElement.None,
     val senteHand: Map<KomaType, Int>,
     val goteHand: Map<KomaType, Int>,
+    val promotionPrompt: BoardKoma?,
 ) {
     data class BoardKoma(
         val komaType: KomaType,
