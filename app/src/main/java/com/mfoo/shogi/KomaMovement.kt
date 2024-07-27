@@ -26,13 +26,33 @@ internal class KomaMovement(
         board: MailboxBoard,
         startIdx: MailboxIdx,
         side: Side,
-    ): Iterable<Square> {
+    ): Set<Square> {
         val steps = this.steps
             .map { dir -> dir + startIdx }
             .filterNot { isAllyAtIndex(board, it, side) }
             .map(MailboxBoardImpl::sqFromIndex)
         val lines = lines.flatMap { getSquaresInRay(board, side, startIdx, it) }
         return steps.plus(lines).toSet()
+    }
+
+    fun getKomasInStepRange(
+        board: MailboxBoard,
+        startIdx: MailboxIdx,
+    ): List<Koma> {
+        return steps.mapNotNull { dir ->
+            when (val content = board.mailbox[dir + startIdx]) {
+                MailboxContent.Invalid -> null
+                MailboxContent.Empty -> null
+                is MailboxContent.Koma -> content.t
+            }
+        }
+    }
+
+    fun getKomasBlockingLines(
+        board: MailboxBoard,
+        startIdx: MailboxIdx,
+    ): List<Koma> {
+        return lines.mapNotNull { getKomaBlockingLine(board, startIdx, it) }
     }
 }
 
@@ -75,4 +95,20 @@ private fun getSquaresInRay(
         }
     }
     return res
+}
+
+private fun getKomaBlockingLine(
+    board: MailboxBoard,
+    startIdx: MailboxIdx,
+    direction: Direction,
+): Koma? {
+    for (stepNum in generateSequence(1) { 1 + it }) {
+        val idx = startIdx + direction.t * stepNum
+        return when (val content = board.mailbox[idx]) {
+            MailboxContent.Invalid -> null
+            MailboxContent.Empty -> continue
+            is MailboxContent.Koma -> content.t
+        }
+    }
+    return null
 }

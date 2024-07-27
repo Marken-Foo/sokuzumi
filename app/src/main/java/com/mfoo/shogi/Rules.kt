@@ -28,8 +28,60 @@ private fun Square.isLastTwoRows(side: Side): Boolean {
     }
 }
 
-fun isLegal(move: Move, pos: PositionImpl): Boolean {
-    TODO("implement move legality checking")
+/**
+ * Returns whether a side is in check. Assumes that the king (OU) is the royal
+ * koma for each side.
+ */
+fun isInCheck(side: Side, pos: PositionImpl): Boolean {
+    // Implementation scans from the OU location to see which enemy units
+    // could attack it, assuming standard shogi koma types.
+    // May not work with non-standard-shogi komaTypes or movements in play.
+    val mailbox = pos.getMailbox()
+    val ouIdx = when (side) {
+        Side.SENTE -> mailbox.senteOu
+        Side.GOTE -> mailbox.goteOu
+    } ?: return false
+
+    val stepperMovements = listOf(
+        KomaType.FU to listOf(KomaType.FU),
+        KomaType.KE to listOf(KomaType.KE),
+        KomaType.GI to listOf(KomaType.GI, KomaType.RY),
+        KomaType.KI to listOf(
+            KomaType.KI,
+            KomaType.TO,
+            KomaType.NY,
+            KomaType.NK,
+            KomaType.NG,
+            KomaType.UM
+        ),
+        KomaType.OU to listOf(KomaType.OU),
+    )
+    // Here we use the "reversibility" of the standard shogi moves:
+    // e.g. The squares that a sente KI can reach are the squares
+    // from which a gote KI (or TO/NY/NK/NG) would be attacking it.
+    val isInCheckByStepper = stepperMovements
+        .map { (movementType, attackers) ->
+            getKomaMovement(side, movementType)
+                .getKomasInStepRange(mailbox, ouIdx)
+                .any { k -> k.side == side.switch() && k.komaType in attackers }
+        }
+        .any { it }
+
+    val riderMovements = listOf(
+        KomaType.KY to listOf(KomaType.KY),
+        KomaType.KA to listOf(KomaType.KA, KomaType.UM),
+        KomaType.HI to listOf(KomaType.HI, KomaType.RY),
+    )
+    // e.g. The squares that a sente KA can reach are the squares
+    // from which a gote KA (or UM) would be attacking it.
+    val isInCheckByRider = riderMovements
+        .map { (movementType, attackers) ->
+            getKomaMovement(side, movementType)
+                .getKomasBlockingLines(mailbox, ouIdx)
+                .any { k -> k.side == side.switch() && k.komaType in attackers }
+        }
+        .any { it }
+    return isInCheckByStepper || isInCheckByRider
 }
 
 fun isValid(move: Move, pos: PositionImpl): Boolean {

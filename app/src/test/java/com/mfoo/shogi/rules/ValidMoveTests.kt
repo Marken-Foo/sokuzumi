@@ -16,7 +16,7 @@ import io.kotest.matchers.shouldNotBe
 
 internal val Pos = PositionImpl
 
-private fun PositionImpl.Companion.fromMap(komas: Map<Square, Koma>): PositionImpl {
+internal fun PositionImpl.Companion.fromMap(komas: Map<Square, Koma>): PositionImpl {
     return komas.fold(this.empty()) { pos, (sq, koma) ->
         pos.setKoma(sq, koma)
     }

@@ -4,6 +4,8 @@ import arrow.core.Either
 
 interface MailboxBoard {
     val mailbox: List<MailboxContent>
+    val senteOu: Int?
+    val goteOu: Int?
 
     /**
      * Returns the content of the column. Useful for nifu detection.
@@ -47,7 +49,10 @@ sealed interface MailboxContent {
  */
 class MailboxBoardImpl private constructor(
     override val mailbox: List<MailboxContent>,
+    override val senteOu: Int? = null,
+    override val goteOu: Int? = null,
 ) : Board, MailboxBoard {
+
     override fun getKoma(sq: Square): Either<Unit, Koma?> {
         return when (val content = mailbox[indexFromSq(sq)]) {
             is MailboxContent.Koma -> Either.Right(content.t)
@@ -58,8 +63,21 @@ class MailboxBoardImpl private constructor(
 
     override fun setKoma(sq: Square, koma: Koma): Board {
         val newMailbox = this.mailbox.toMutableList()
-        newMailbox[indexFromSq(sq)] = MailboxContent.Koma(koma)
-        return MailboxBoardImpl(mailbox = newMailbox.toList())
+        val idx = indexFromSq(sq)
+        newMailbox[idx] = MailboxContent.Koma(koma)
+        return MailboxBoardImpl(
+            mailbox = newMailbox.toList(),
+            senteOu = if (koma == Koma(Side.SENTE, KomaType.OU)) {
+                idx
+            } else {
+                null
+            },
+            goteOu = if (koma == Koma(Side.GOTE, KomaType.OU)) {
+                idx
+            } else {
+                null
+            },
+        )
     }
 
     override fun removeKoma(sq: Square): Board {
