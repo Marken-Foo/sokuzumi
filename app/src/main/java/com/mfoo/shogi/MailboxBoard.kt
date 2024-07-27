@@ -49,8 +49,8 @@ sealed interface MailboxContent {
  */
 class MailboxBoardImpl private constructor(
     override val mailbox: List<MailboxContent>,
-    override val senteOu: Int? = null,
-    override val goteOu: Int? = null,
+    override val senteOu: Int?,
+    override val goteOu: Int?,
 ) : Board, MailboxBoard {
 
     override fun getKoma(sq: Square): Either<Unit, Koma?> {
@@ -70,12 +70,12 @@ class MailboxBoardImpl private constructor(
             senteOu = if (koma == Koma(Side.SENTE, KomaType.OU)) {
                 idx
             } else {
-                null
+                senteOu
             },
             goteOu = if (koma == Koma(Side.GOTE, KomaType.OU)) {
                 idx
             } else {
-                null
+                goteOu
             },
         )
     }
@@ -83,7 +83,11 @@ class MailboxBoardImpl private constructor(
     override fun removeKoma(sq: Square): Board {
         val newMailbox = this.mailbox.toMutableList()
         newMailbox[indexFromSq(sq)] = MailboxContent.Empty
-        return MailboxBoardImpl(mailbox = newMailbox.toList())
+        return MailboxBoardImpl(
+            mailbox = newMailbox.toList(),
+            senteOu = senteOu,
+            goteOu = goteOu,
+        )
     }
 
     override fun getColumn(col: Col): List<MailboxContent> {
@@ -135,7 +139,7 @@ class MailboxBoardImpl private constructor(
                         .let { mailbox.set(it, MailboxContent.Empty) }
                 }
             }
-            return MailboxBoardImpl(mailbox)
+            return MailboxBoardImpl(mailbox, null, null)
         }
 
         private fun colFromIndex(idx: Int): Col =
