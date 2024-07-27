@@ -12,7 +12,7 @@ import com.mfoo.shogi.Side
 import com.mfoo.shogi.Square
 import com.mfoo.shogi.canBePromotion
 import com.mfoo.shogi.doMove
-import com.mfoo.shogi.isValid
+import com.mfoo.shogi.isLegal
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -146,7 +146,7 @@ class PositionVM {
                     return
                 }
                 if (!canBePromotion(move)) {
-                    return if (isValid(move, pos)) {
+                    return if (isLegal(move, pos)) {
                         pos = pos.doMove(move) as PositionImpl
                         this.selection = Selected.None
                     } else {
@@ -155,25 +155,25 @@ class PositionVM {
                 }
 
                 val promotion = move.copy(isPromotion = true)
-                val isPromotionValid = isValid(promotion, pos)
-                val isUnpromotionValid = isValid(move, pos)
+                val isPromotionLegal = isLegal(promotion, pos)
+                val isUnpromotionLegal = isLegal(move, pos)
 
-                if (isPromotionValid && isUnpromotionValid) {
+                if (isPromotionLegal && isUnpromotionLegal) {
                     pendingPromotion = PromotionInfo(move)
                     this.selection = Selected.None
                     return
                 }
-                if (isPromotionValid && !isUnpromotionValid) {
+                if (isPromotionLegal && !isUnpromotionLegal) {
                     this.selection = Selected.None
                     pos = pos.doMove(promotion) as PositionImpl
                     return
                 }
-                if (!isPromotionValid && isUnpromotionValid) {
+                if (!isPromotionLegal && isUnpromotionLegal) {
                     this.selection = Selected.None
                     pos = pos.doMove(move) as PositionImpl
                     return
                 }
-                if (!isPromotionValid && !isUnpromotionValid) {
+                if (!isPromotionLegal && !isUnpromotionLegal) {
                     selectSquareIfAlly(sq)
                     return
                 }
@@ -185,8 +185,7 @@ class PositionVM {
                     prevSelection.side,
                     prevSelection.komaType
                 )
-                if (isValid(move, pos)) {
-                    //TODO: should be isLegal()
+                if (isLegal(move, pos)) {
                     pos = pos.doMove(move) as PositionImpl
                     this.selection = Selected.None
                 } else {

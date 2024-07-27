@@ -28,6 +28,18 @@ private fun Square.isLastTwoRows(side: Side): Boolean {
     }
 }
 
+fun isLegal(move: Move, pos: PositionImpl): Boolean {
+    return isValid(move, pos) && when (move) {
+        is Move.GameEnd -> true
+        is Move.Regular -> !isInCheck(
+            move.side,
+            pos.doMove(move) as PositionImpl
+        )
+
+        is Move.Drop -> !isInCheck(move.side, pos.doMove(move) as PositionImpl)
+    }
+}
+
 /**
  * Returns whether a side is in check. Assumes that the king (OU) is the royal
  * koma for each side.
@@ -40,7 +52,8 @@ fun isInCheck(side: Side, pos: PositionImpl): Boolean {
     val ouIdx = when (side) {
         Side.SENTE -> mailbox.senteOu
         Side.GOTE -> mailbox.goteOu
-    } ?: return false
+    }
+    if (ouIdx == null) return false
 
     val stepperMovements = listOf(
         KomaType.FU to listOf(KomaType.FU),
@@ -78,6 +91,7 @@ fun isInCheck(side: Side, pos: PositionImpl): Boolean {
         .map { (movementType, attackers) ->
             getKomaMovement(side, movementType)
                 .getKomasBlockingLines(mailbox, ouIdx)
+                .also(::println)
                 .any { k -> k.side == side.switch() && k.komaType in attackers }
         }
         .any { it }
