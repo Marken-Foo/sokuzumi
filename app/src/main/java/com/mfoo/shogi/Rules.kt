@@ -119,19 +119,10 @@ private fun isMoveSideCorrect(move: Move, pos: Position): Boolean {
 }
 
 private fun isDropValid(move: Move.Drop, pos: PositionImpl): Boolean {
-    if (isSquareOccupied(pos, move.sq)) {
-        return false
-    }
-    if (pos.getHandAmount(move.side, move.komaType) < 1) {
-        return false
-    }
-    if (isDeadKoma(move.komaType, move.sq, move.side)) {
-        return false
-    }
-    if (isNifu(move, pos)) {
-        return false
-    }
-    return true
+    return isSquareEmpty(pos, move.sq)
+        && hasKomaToDrop(move, pos)
+        && !isDeadKoma(move.komaType, move.sq, move.side)
+        && !isNifu(move, pos)
 }
 
 private fun isRegularMoveValid(move: Move.Regular, pos: PositionImpl): Boolean {
@@ -139,22 +130,18 @@ private fun isRegularMoveValid(move: Move.Regular, pos: PositionImpl): Boolean {
         .getKoma(move.startSq)
         .fold({ null }, { it })
         ?: return false
-    if (koma.komaType != move.komaType) {
-        return false
-    }
-    if (move.isPromotion && !canBePromotion(move)) {
-        return false
-    }
-    if (isDeadKoma(move.komaType, move.endSq, move.side) && !move.isPromotion) {
-        return false
-    }
-
-    val validDestinations = getValidDestinations(pos.getMailbox(), move.startSq)
-    return move.endSq in validDestinations
+    return koma.komaType == move.komaType
+        && !(move.isPromotion && !canBePromotion(move))
+        && !(isDeadKoma(move.komaType, move.endSq, move.side) && !move.isPromotion)
+        && move.endSq in getValidDestinations(pos.getMailbox(), move.startSq)
 }
 
-private fun isSquareOccupied(pos: Position, sq: Square): Boolean {
-    return pos.getKoma(sq).fold({ false }, { it != null })
+private fun isSquareEmpty(pos: Position, sq: Square): Boolean {
+    return pos.getKoma(sq).fold({ false }, { it == null })
+}
+
+private fun hasKomaToDrop(move: Move.Drop, pos: Position): Boolean {
+    return pos.getHandAmount(move.side, move.komaType) >= 1
 }
 
 /**
@@ -171,6 +158,23 @@ private fun isDeadKoma(komaType: KomaType, sq: Square, side: Side): Boolean {
         KomaType.RY,
         -> false
     }
+}
+
+/**
+ * Returns whether the drop move is nifu, i.e. if there is already an allied
+ * unpromoted FU on the same file.
+ */
+private fun isNifu(move: Move.Drop, pos: PositionImpl): Boolean {
+    if (move.komaType != KomaType.FU) {
+        return false
+    }
+    return pos.getMailbox()
+        .getColumn(move.sq.col)
+        .any {
+            it is MailboxContent.Koma
+                && it.t.komaType == KomaType.FU
+                && it.t.side == move.side
+        }
 }
 
 /**
@@ -192,21 +196,4 @@ private fun getValidDestinations(
                 .toList()
         }
     }
-}
-
-/**
- * Returns whether the drop move is nifu, i.e. if there is already an allied
- * unpromoted FU on the same file.
- */
-private fun isNifu(move: Move.Drop, pos: PositionImpl): Boolean {
-    if (move.komaType != KomaType.FU) {
-        return false
-    }
-    return pos.getMailbox()
-        .getColumn(move.sq.col)
-        .any {
-            it is MailboxContent.Koma
-                && it.t.komaType == KomaType.FU
-                && it.t.side == move.side
-        }
 }
