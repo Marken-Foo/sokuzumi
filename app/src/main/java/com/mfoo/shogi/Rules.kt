@@ -33,10 +33,10 @@ fun isLegal(move: Move, pos: PositionImpl): Boolean {
         is Move.GameEnd -> true
         is Move.Regular -> !isInCheck(
             move.side,
-            pos.doMove(move) as PositionImpl
+            pos.doMove(move)
         )
 
-        is Move.Drop -> !isInCheck(move.side, pos.doMove(move) as PositionImpl)
+        is Move.Drop -> !isInCheck(move.side, pos.doMove(move))
     }
 }
 
@@ -98,6 +98,7 @@ fun isInCheck(side: Side, pos: PositionImpl): Boolean {
     return isInCheckByStepper || isInCheckByRider
 }
 
+// TODO: Redefine "isValid" and split validity/legality checks appropriately
 fun isValid(move: Move, pos: PositionImpl): Boolean {
     if (!isMoveSideCorrect(move, pos)) {
         return false

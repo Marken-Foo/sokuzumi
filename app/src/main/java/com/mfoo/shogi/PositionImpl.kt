@@ -15,6 +15,7 @@ data class PositionImpl(
     private val board: Board,
     private val sideToMove: Side,
 ) : Position, MailboxPosition {
+
     override fun getHandOfSide(side: Side): Hand {
         return when (side) {
             Side.SENTE -> senteHand
@@ -99,6 +100,49 @@ data class PositionImpl(
 
     override fun toggleSideToMove(): PositionImpl {
         return copy(sideToMove = sideToMove.switch())
+    }
+
+    override fun doMove(move: Move): PositionImpl {
+        return when (move) {
+            is Move.GameEnd -> this
+            is Move.Regular -> {
+                val capturedKoma = this.getKoma(move.endSq)
+                val finalKoma =
+                    if (move.isPromotion && move.komaType.isPromotable()) {
+                        Koma(move.side, move.komaType.promote())
+                    } else {
+                        Koma(move.side, move.komaType)
+                    }
+                this
+                    .toggleSideToMove()
+                    .removeKoma(move.startSq)
+                    .setKoma(move.endSq, finalKoma)
+                    .putCapturedKomaInHand(move.side, capturedKoma)
+            }
+
+            is Move.Drop -> {
+                this
+                    .toggleSideToMove()
+                    .decrementHandAmount(move.side, move.komaType)
+                    .setKoma(move.sq, Koma(move.side, move.komaType))
+            }
+        }
+    }
+
+    private fun putCapturedKomaInHand(
+        side: Side,
+        capturedKoma: Either<Unit, Koma?>,
+    ): PositionImpl {
+        return capturedKoma.fold(
+            { this },
+            { k ->
+                if (k != null) {
+                    this.incrementHandAmount(side, k.komaType.demote())
+                } else {
+                    this
+                }
+            }
+        )
     }
 
     override fun getMailbox(): MailboxBoard {

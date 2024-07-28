@@ -11,7 +11,6 @@ import com.mfoo.shogi.Row
 import com.mfoo.shogi.Side
 import com.mfoo.shogi.Square
 import com.mfoo.shogi.canBePromotion
-import com.mfoo.shogi.doMove
 import com.mfoo.shogi.isLegal
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -147,7 +146,7 @@ class PositionVM {
                 }
                 if (!canBePromotion(move)) {
                     return if (isLegal(move, pos)) {
-                        pos = pos.doMove(move) as PositionImpl
+                        pos = pos.doMove(move)
                         this.selection = Selected.None
                     } else {
                         selectSquareIfAlly(sq)
@@ -165,12 +164,12 @@ class PositionVM {
                 }
                 if (isPromotionLegal && !isUnpromotionLegal) {
                     this.selection = Selected.None
-                    pos = pos.doMove(promotion) as PositionImpl
+                    pos = pos.doMove(promotion)
                     return
                 }
                 if (!isPromotionLegal && isUnpromotionLegal) {
                     this.selection = Selected.None
-                    pos = pos.doMove(move) as PositionImpl
+                    pos = pos.doMove(move)
                     return
                 }
                 if (!isPromotionLegal && !isUnpromotionLegal) {
@@ -186,7 +185,7 @@ class PositionVM {
                     prevSelection.komaType
                 )
                 if (isLegal(move, pos)) {
-                    pos = pos.doMove(move) as PositionImpl
+                    pos = pos.doMove(move)
                     this.selection = Selected.None
                 } else {
                     selectSquareIfAlly(sq)
@@ -245,7 +244,7 @@ class PositionVM {
             return
         }
         val move = unpromotion.copy(isPromotion = true)
-        pos = pos.doMove(move) as PositionImpl
+        pos = pos.doMove(move)
         pendingPromotion = null
     }
 
@@ -255,7 +254,7 @@ class PositionVM {
             // should not be the case, should signal error
             return
         }
-        pos = pos.doMove(move) as PositionImpl
+        pos = pos.doMove(move)
         pendingPromotion = null
     }
 }

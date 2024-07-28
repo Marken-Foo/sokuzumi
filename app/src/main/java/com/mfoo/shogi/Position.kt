@@ -24,6 +24,11 @@ interface Position {
     fun getSideToMove(): Side
     fun setSideToMove(side: Side): Position
     fun toggleSideToMove(): Position
+
+    /**
+     * Applies the move to the given position, regardless of whether the move is legal.
+     */
+    fun doMove(move: Move): Position
 }
 
 interface PositionFactory {
