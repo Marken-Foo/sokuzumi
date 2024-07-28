@@ -1,8 +1,6 @@
 package com.mfoo.shogi.kif
 
 import java.io.BufferedReader
-import java.io.File
-import java.nio.charset.Charset
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -43,11 +41,6 @@ private object KifRegex {
     private const val moveLineStr =
         "^[ \\t]*$moveNum[ \\t]*$moveBody[ \\t]*(?:$moveTimes)?[ \\t]*$"
     val moveLine = moveLineStr.toRegex()
-}
-
-
-fun readFile(filename: String): BufferedReader {
-    return File(filename).bufferedReader(Charset.forName("SHIFT-JIS"))
 }
 
 fun tokenise(input: BufferedReader): List<Token> {
@@ -95,7 +88,7 @@ private fun getTotalDuration(match: MatchResult): Duration? {
     return (hours * 3600 + minutes * 60 + seconds).seconds
 }
 
-fun tokeniseLine(input: String): Token {
+private fun tokeniseLine(input: String): Token {
     KifRegex.moveLine
         .matchAt(input, 0)
         ?.let {
@@ -137,9 +130,4 @@ fun tokeniseLine(input: String): Token {
             return Token.HeaderKeyValuePair(key, value)
         }
     return Token.Unknown
-}
-
-fun main() {
-    val buf = readFile("./sample_problems/3te/10.kif")
-    println(tokenise(buf))
 }

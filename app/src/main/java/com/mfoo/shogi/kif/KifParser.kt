@@ -4,6 +4,7 @@ import com.mfoo.shogi.Position
 import com.mfoo.shogi.PositionImpl
 import com.mfoo.shogi.Square
 import com.mfoo.shogi.bod.parseBod
+import com.mfoo.shogi.readFile
 
 /**
  * Parse a provided KIF file.
@@ -279,7 +280,7 @@ private fun makeVariationNodes(
     }
 }
 
-fun main() {
+private fun main() {
     val game = readKifFile("./sample_problems/variations.kif")
     println(game)
 }

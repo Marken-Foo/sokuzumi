@@ -4,10 +4,6 @@ import com.mfoo.shogi.Koma
 import com.mfoo.shogi.KomaType
 import com.mfoo.shogi.Side
 
-private fun main() {
-    val res = parseSfen("7r1/6B1p/6Bsk/9/7P1/9/9/5+P+p2/8N w 2Sr4gs3n4l14p 1")
-    println(res)
-}
 
 fun parseSfen(input: String): SfenAst.ShogiPosition? {
     val parts = input.split("""[ \t]+""".toRegex())
