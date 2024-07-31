@@ -2,6 +2,7 @@ package com.mfoo.shogi
 
 import arrow.core.Either
 import com.mfoo.shogi.bod.BodAst
+import com.mfoo.shogi.sfen.SfenAst
 
 /**
  * Represents a shogi position state, equivalent to the information in an SFEN.
@@ -34,5 +35,6 @@ interface Position {
 interface PositionFactory {
     fun empty(): Position
     fun fromSfen(sfen: String): Position?
+    fun fromSfenAst(sfenTree: SfenAst.ShogiPosition): Position
     fun fromBodAst(bodPosition: BodAst.Position): Position?
 }

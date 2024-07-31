@@ -91,7 +91,6 @@ fun isInCheck(side: Side, pos: PositionImpl): Boolean {
         .map { (movementType, attackers) ->
             getKomaMovement(side, movementType)
                 .getKomasBlockingLines(mailbox, ouIdx)
-                .also(::println)
                 .any { k -> k.side == side.switch() && k.komaType in attackers }
         }
         .any { it }

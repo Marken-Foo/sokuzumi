@@ -5,6 +5,28 @@ import com.mfoo.shogi.PositionImpl
 import com.mfoo.shogi.Square
 import com.mfoo.shogi.bod.parseBod
 import com.mfoo.shogi.readFile
+import java.io.BufferedReader
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.nio.charset.Charset
+
+fun readKifFromShiftJisStream(inputStream: InputStream): KifAst.Game? {
+    val tokens = InputStreamReader(inputStream, Charset.forName("SHIFT-JIS"))
+        .let(::BufferedReader)
+        .let(::tokenise)
+    val (gameInfo, state1) = parseGameInformation(ParseState(tokens))
+    val (moveList, state2) = parseMainMoveSection(state1)
+    val (variationList, _) = parseVariationSection(state2)
+
+    val rootNode = makeMoveTree(moveList, variationList)
+    return rootNode?.let {
+        KifAst.Game(
+            gameInfo.startPosition,
+            rootNode,
+            gameInfo.headers,
+        )
+    }
+}
 
 /**
  * Parse a provided KIF file.
