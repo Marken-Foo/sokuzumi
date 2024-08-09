@@ -8,7 +8,7 @@ import kotlin.time.Duration
 sealed interface KifAst {
     class Game(
         val startPos: Position,
-        val rootNode: RootNode,
+        val rootNode: Tree.RootNode,
         val headers: List<Header>,
     ) : KifAst {
         override fun toString(): String {
@@ -22,21 +22,38 @@ sealed interface KifAst {
         }
     }
 
-    data class RootNode(
-        val children: List<MoveNode>,
-    ) : KifAst {
-        override fun toString(): String {
-            return "Root node: \n${children}"
-        }
-    }
+    sealed interface Tree : KifAst {
+        val children: List<MoveNode>
 
-    // Be permissive and allow moves after a game termination
-    data class MoveNode(
-        val children: List<MoveNode>,
-        val move: Move,
-    ) : KifAst {
-        override fun toString(): String {
-            return "${move} ${children.map { "\n Child of ${move} -- ${it}" }}"
+        data class RootNode(
+            override val children: List<MoveNode>,
+        ) : Tree {
+            override fun toString(): String {
+                return "Root node: \n${children}"
+            }
+        }
+
+        // Be permissive and allow moves after a game termination
+        data class MoveNode(
+            override val children: List<MoveNode>,
+            val move: Move,
+        ) : Tree {
+            override fun toString(): String {
+                return "${move} ${children.map { "\n Child of ${move} -- ${it}" }}"
+            }
+        }
+
+
+        fun <R> fold(acc: R, f: (R, Tree) -> R): R {
+            return this.children
+                .fold(f(acc, this)) { a, n -> n.fold(a, f) }
+        }
+
+        /**
+         * Tree catamorphism.
+         */
+        fun <R> cata(f: (tree: Tree, convertedSubTree: Collection<R>) -> R): R {
+            return f(this, this.children.map { it.cata(f) })
         }
     }
 

@@ -237,7 +237,7 @@ private fun parseVariation(input: ParseState): ParseResult<Variation?> {
 private fun makeMoveTree(
     mainMoves: List<KifAst.Move>,
     variationList: List<Variation>,
-): KifAst.RootNode? {
+): KifAst.Tree.RootNode? {
     if (mainMoves.isEmpty()) {
         return null
     }
@@ -270,16 +270,16 @@ private fun makeMoveTree(
     if (branches.size != 1) {
         return null
     }
-    return KifAst.RootNode(branches.values.toList()[0])
+    return KifAst.Tree.RootNode(branches.values.toList()[0])
 }
 
 /**
  * A mapping of move numbers to the nodes representing the variations that start
  * at that move.
  */
-private typealias BranchNodes = MutableMap<Int, ArrayDeque<KifAst.MoveNode>>
+private typealias BranchNodes = MutableMap<Int, ArrayDeque<KifAst.Tree.MoveNode>>
 
-private fun BranchNodes.addNode(moveNum: Int, node: KifAst.MoveNode) {
+private fun BranchNodes.addNode(moveNum: Int, node: KifAst.Tree.MoveNode) {
     this.putIfAbsent(moveNum, ArrayDeque())
     this[moveNum]?.addFirst(node)
 }
@@ -292,13 +292,13 @@ private fun BranchNodes.addNode(moveNum: Int, node: KifAst.MoveNode) {
 private fun makeVariationNodes(
     variation: Variation,
     branches: BranchNodes,
-): KifAst.MoveNode? {
+): KifAst.Tree.MoveNode? {
     // As variation moves are in sequence, traverse in reverse to construct
     // the chain of nodes starting from the leaf.
-    return variation.moveList.foldRight<KifAst.Move, KifAst.MoveNode?>(null) { move, acc ->
+    return variation.moveList.foldRight<KifAst.Move, KifAst.Tree.MoveNode?>(null) { move, acc ->
         val children = branches[move.moveNum + 1] ?: ArrayDeque()
         acc?.let { children.addFirst(acc) }
-        KifAst.MoveNode(children, move)
+        KifAst.Tree.MoveNode(children, move)
     }
 }
 
