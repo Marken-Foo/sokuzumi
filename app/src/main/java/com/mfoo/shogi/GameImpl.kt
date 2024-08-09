@@ -11,7 +11,20 @@ import com.mfoo.shogi.kif.readKifFile
 private typealias MoveNum = Int
 private typealias Idx = Int
 
-// Represents a variation consisting of moves and any branching points.
+/**
+ * Represents a variation consisting of moves and any branching points.
+ *
+ * In normal shogi game use cases, the expected number of branches is
+ * expected to be low compared to the length of the game, and the
+ * majority of operations would be done on the mainline.
+ *
+ * This data structure was chosen over an immutable tree (one move per node)
+ * for the following advantages:
+ *
+ * - recursive depth of a single game is reduced
+ * - localises the moves of a single variation together
+ * - addMove() may be cheaper here than for an immutable tree
+ */
 private data class Variation<T>(
     val moveNum: MoveNum, // move number of first move
     val moves: List<T>,
@@ -40,19 +53,27 @@ private data class Variation<T>(
     }
 }
 
-private data class Choice(val moveNumber: MoveNum, val choice: Int)
+private data class Choice(val moveNum: MoveNum, val idx: Idx)
 
-private data class CurrentLocation(
-    val choices: ArrayDeque<Choice>,
-    val moveNumber: MoveNum,
+/**
+ * The location within a [Variation]-based data structure
+ * is given by the choices made at every branching point from the root,
+ * and the move number within the current Variation.
+ *
+ * Also includes the position at the given location.
+ */
+private data class Location(
+    val path: ArrayDeque<Choice>,
+    val moveNum: MoveNum,
+    val pos: PositionImpl,
 )
 
-data class GameImpl private constructor(
-    private val variations: Variation<Move>,
-    private val path: CurrentLocation,
-    private val pos: PositionImpl,
+class GameImpl private constructor(
+    private val gameMoves: Variation<Move>,
+    private val currentLocation: Location,
+    private val startPos: PositionImpl,
 ) : Game {
-    override fun addMove(move: Move): Game {
+    override fun addMove(move: Move): Either<GameError.IllegalMove, Game> {
         TODO("Not yet implemented")
     }
 
@@ -69,15 +90,51 @@ data class GameImpl private constructor(
     }
 
     override fun goToStart(): Game {
-        TODO("Not yet implemented")
+        return GameImpl(
+            this.gameMoves,
+            Location(
+                ArrayDeque(),
+                this.gameMoves.moveNum,
+                this.startPos
+            ),
+            this.startPos
+        )
     }
 
     override fun goToVariationEnd(): Game {
-        TODO("Not yet implemented")
+        val currentVariation =
+            findVariation(this.gameMoves, this.currentLocation)
+        val newPos = currentVariation
+            .let {
+                val currentIdx = this.currentLocation.moveNum - it.moveNum
+                it.moves.subList(currentIdx, it.moves.size)
+            }
+            .fold(this.currentLocation.pos) { acc, move -> acc.doMove(move) }
+        return GameImpl(
+            this.gameMoves,
+            this.currentLocation.copy(
+                moveNum = currentVariation.let { it.moveNum + it.moves.size - 1 },
+                pos = newPos,
+            ),
+            this.startPos
+        )
+    }
+
+    private fun <T> findVariation(
+        gameMoves: Variation<T>,
+        location: Location,
+    ): Variation<T> {
+        return location.path.foldRight(gameMoves) { choice, acc ->
+            val branchIdx = choice.moveNum - acc.moveNum
+            acc.branches[branchIdx]!![choice.idx]
+        }
     }
 
     override fun isAtVariationEnd(): Boolean {
-        TODO("Not yet implemented")
+        val currentMoveNum = this.currentLocation.moveNum
+        val finalMoveNum = findVariation(this.gameMoves, this.currentLocation)
+            .let { it.moveNum + it.moves.size - 1 }
+        return currentMoveNum == finalMoveNum
     }
 
     override fun getMainlineMove(): Move? {
@@ -86,10 +143,11 @@ data class GameImpl private constructor(
 
     companion object : GameFactory {
         override fun empty(): Game {
+            val emptyPos = PositionImpl.empty()
             return GameImpl(
                 Variation(0, emptyList(), emptyMap()),
-                CurrentLocation(ArrayDeque(), 0),
-                PositionImpl.empty()
+                Location(ArrayDeque(), 0, emptyPos),
+                emptyPos,
             )
         }
 
@@ -106,28 +164,29 @@ data class GameImpl private constructor(
                     .subList(1, rootVariations.size)
                     .fold(rootVariations[0]) { a, v -> a.addBranch(v) }
             }
-            val internal = playOut(
+            return playOut(
                 mainVariation,
                 kifAst.startPos.getSideToMove(),
-                kifAst.startPos
+                kifAst.startPos as PositionImpl
             )
-            return internal.fold({ println(it); GameImpl.empty() }) {
-                GameImpl(
-                    it,
-                    CurrentLocation(ArrayDeque(), firstMoveNum),
-                    kifAst.startPos as PositionImpl,
-                )
-            }
+                .fold({ GameImpl.empty() }) {
+                    GameImpl(
+                        it,
+                        Location(
+                            ArrayDeque(),
+                            firstMoveNum,
+                            kifAst.startPos
+                        ),
+                        kifAst.startPos,
+                    )
+                }
         }
 
         private fun moveFromKifAst(
             kifMove: KifAst.Move,
-            startingMoveNum: Int,
-            startingSide: Side,
+            side: Side,
             posBeforeMove: Position,
         ): Move {
-            val side =
-                getSideToMove(startingMoveNum, kifMove.moveNum, startingSide)
             return when (kifMove) {
                 is KifAst.Move.Drop -> {
                     Move.Drop(kifMove.sq, side, kifMove.komaType)
@@ -187,7 +246,7 @@ data class GameImpl private constructor(
         private fun playOut(
             variation: Variation<KifAst.Move>,
             startingSide: Side,
-            startPos: Position,
+            startPos: PositionImpl,
         ): Either<String, Variation<Move>> {
             return either {
                 val moves =
@@ -210,21 +269,25 @@ data class GameImpl private constructor(
             }
         }
 
+        /**
+         * Transforms a [Variation]<[KifAst.Move]> to a `List`<[Move]> of
+         * the variation's mainline moves.
+         */
         private fun legalMovesFromKifMoves(
             variation: Variation<KifAst.Move>,
             startingSide: Side,
-            startPos: Position,
+            startPos: PositionImpl,
         ): Either<String, List<Move>> {
             var pos = startPos
             val moveList = mutableListOf<Move>()
             for (kifMove in variation.moves) {
-                val move = moveFromKifAst(
-                    kifMove,
+                val side = getSideToMove(
                     variation.moveNum,
-                    startingSide,
-                    pos
+                    kifMove.moveNum,
+                    startingSide
                 )
-                if (!isLegal(move, pos as PositionImpl)) {
+                val move = moveFromKifAst(kifMove, side, pos)
+                if (!isLegal(move, pos)) {
                     return "Illegal move: ${move}".left()
                 }
                 pos = pos.doMove(move)
@@ -233,6 +296,10 @@ data class GameImpl private constructor(
             return moveList.right()
         }
 
+        /**
+         * Transforms a [KifAst.Tree] (of MoveNodes) to
+         * a [Variation]<[KifAst.Move]>.
+         */
         private fun traverse(
             acc: Variation<KifAst.Move>,
             node: KifAst.Tree.MoveNode,
@@ -262,5 +329,6 @@ data class GameImpl private constructor(
 private fun main() {
     val game =
         GameImpl.fromKifAst(readKifFile("sample_problems/variations.kif")!!)
-    println(game)
+    println(game.isAtVariationEnd())
+    println(game.goToVariationEnd().isAtVariationEnd())
 }

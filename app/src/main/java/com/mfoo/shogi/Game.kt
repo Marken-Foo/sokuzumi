@@ -6,13 +6,14 @@ import com.mfoo.shogi.kif.KifAst
 
 sealed interface GameError {
     data object StartOfGame : GameError
+    data object IllegalMove : GameError
     data object NoSuchMove: GameError
     data object EndOfVariation : GameError
 }
 
 interface Game {
     // Construction
-    fun addMove(move: Move): Game
+    fun addMove(move: Move): Either<GameError.IllegalMove, Game>
 
     // Navigation
     fun advanceMove(move: Move): Either<GameError.NoSuchMove, Game>
