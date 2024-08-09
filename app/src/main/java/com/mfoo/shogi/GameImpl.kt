@@ -2,7 +2,6 @@ package com.mfoo.shogi
 
 import arrow.core.Either
 import com.mfoo.shogi.kif.KifAst
-import com.mfoo.shogi.kif.readKifFile
 
 
 private typealias MoveNum = Int
@@ -80,7 +79,7 @@ private fun moveFromKifAst(
 
         is KifAst.Move.Regular -> {
             val capturedKoma =
-                getCapturedKoma(kifAstMove, posBeforeMove).getOrNull()
+                posBeforeMove.getKoma(kifAstMove.endSq).getOrNull()
             Move.Regular(
                 startSq = kifAstMove.startSq,
                 endSq = kifAstMove.endSq,
@@ -91,13 +90,6 @@ private fun moveFromKifAst(
             )
         }
     }
-}
-
-private fun getCapturedKoma(
-    kifAstMove: KifAst.Move.Regular,
-    pos: Position,
-): Either<Unit, Koma?> {
-    return pos.getKoma(kifAstMove.endSq)
 }
 
 private fun getSideToMove(
@@ -120,29 +112,20 @@ private fun playOut(
     startPos: Position,
 ): Variation<Move> {
     val movePositionPairs = variation.moves
-        .fold(emptyList<Pair<Move, Position>>().toMutableList()) { acc, kifAstMove ->
+        .fold(emptyList<Pair<Move, Position>>()) { acc, kifAstMove ->
             val pos = acc.lastOrNull()?.second ?: startPos
             val move =
-                moveFromKifAst(
-                    kifAstMove,
-                    variation.moveNum,
-                    startingSide,
-                    pos
-                )
-            acc.add(move to pos.doMove(move))
-            acc
+                moveFromKifAst(kifAstMove, variation.moveNum, startingSide, pos)
+            acc + (move to pos.doMove(move))
         }
     val childVariations = variation.branches.mapValues { (idx, children) ->
         children.map {
-            playOut(
-                it,
-                getSideToMove(
-                    variation.moveNum,
-                    variation.moveNum + idx,
-                    startingSide
-                ),
-                movePositionPairs[idx].second
+            val sideToMove = getSideToMove(
+                variation.moveNum,
+                variation.moveNum + idx,
+                startingSide
             )
+            playOut(it, sideToMove, movePositionPairs[idx].second)
         }
     }
     return Variation(
@@ -183,7 +166,7 @@ private data class CurrentLocation(
     val moveNumber: MoveNum,
 )
 
-class VariationGame private constructor(
+class GameImpl private constructor(
     private val variations: Variation<Move>,
     private val path: CurrentLocation,
     private val pos: PositionImpl,
@@ -238,7 +221,7 @@ class VariationGame private constructor(
                     .subList(1, rootVariations.size)
                     .fold(rootVariations[0]) { a, v -> a.addBranch(v) }
             }
-            return VariationGame(
+            return GameImpl(
                 playOut(
                     mainVariation,
                     kifAst.startPos.getSideToMove(),
