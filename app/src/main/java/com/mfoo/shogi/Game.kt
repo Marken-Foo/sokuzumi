@@ -1,6 +1,7 @@
 package com.mfoo.shogi
 
 import arrow.core.Either
+import com.mfoo.shogi.kif.KifAst
 
 
 sealed interface GameError {
@@ -23,4 +24,9 @@ interface Game {
     // Queries
     fun isAtVariationEnd(): Boolean
     fun getMainlineMove(): Move?
+}
+
+interface GameFactory {
+    fun empty(): Game
+    fun fromKifAst(kifAst: KifAst.Game): Game
 }

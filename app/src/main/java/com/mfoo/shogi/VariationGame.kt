@@ -4,6 +4,7 @@ import arrow.core.Either
 import com.mfoo.shogi.kif.KifAst
 import com.mfoo.shogi.kif.readKifFile
 
+
 private typealias MoveNum = Int
 private typealias Idx = Int
 
