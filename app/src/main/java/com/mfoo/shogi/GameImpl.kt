@@ -1,6 +1,9 @@
 package com.mfoo.shogi
 
 import arrow.core.Either
+import arrow.core.left
+import arrow.core.raise.either
+import arrow.core.right
 import com.mfoo.shogi.kif.KifAst
 import com.mfoo.shogi.kif.readKifFile
 
@@ -24,15 +27,6 @@ private data class Variation<T>(
         assert(idx < moves.size)
         val branchList = branches.getOrDefault(idx, emptyList())
         return this.copy(branches = branches + (idx to (branchList + branch)))
-    }
-
-    fun <R> map(f: (T) -> R): Variation<R> {
-        return Variation(
-            moveNum,
-            moves.map(f),
-            branches.mapValues { (_, variationList) ->
-                variationList.map { it.map(f) }
-            })
     }
 
     override fun toString(): String {
@@ -92,7 +86,11 @@ data class GameImpl private constructor(
 
     companion object : GameFactory {
         override fun empty(): Game {
-            TODO("Not yet implemented")
+            return GameImpl(
+                Variation(0, emptyList(), emptyMap()),
+                CurrentLocation(ArrayDeque(), 0),
+                PositionImpl.empty()
+            )
         }
 
         override fun fromKifAst(kifAst: KifAst.Game): Game {
@@ -108,34 +106,35 @@ data class GameImpl private constructor(
                     .subList(1, rootVariations.size)
                     .fold(rootVariations[0]) { a, v -> a.addBranch(v) }
             }
-            return GameImpl(
-                playOut(
-                    mainVariation,
-                    kifAst.startPos.getSideToMove(),
-                    kifAst.startPos
-                ),
-                CurrentLocation(ArrayDeque(), firstMoveNum),
-                kifAst.startPos as PositionImpl,
+            val internal = playOut(
+                mainVariation,
+                kifAst.startPos.getSideToMove(),
+                kifAst.startPos
             )
+            return internal.fold({ println(it); GameImpl.empty() }) {
+                GameImpl(
+                    it,
+                    CurrentLocation(ArrayDeque(), firstMoveNum),
+                    kifAst.startPos as PositionImpl,
+                )
+            }
         }
 
         private fun moveFromKifAst(
-            kifAstMove: KifAst.Move,
+            kifMove: KifAst.Move,
             startingMoveNum: Int,
             startingSide: Side,
             posBeforeMove: Position,
         ): Move {
             val side =
-                getSideToMove(startingMoveNum, kifAstMove.moveNum, startingSide)
-            return when (kifAstMove) {
-                is KifAst.Move.Drop -> Move.Drop(
-                    kifAstMove.sq,
-                    side,
-                    kifAstMove.komaType
-                )
+                getSideToMove(startingMoveNum, kifMove.moveNum, startingSide)
+            return when (kifMove) {
+                is KifAst.Move.Drop -> {
+                    Move.Drop(kifMove.sq, side, kifMove.komaType)
+                }
 
                 is KifAst.Move.GameEnd -> {
-                    val gameEndType = when (kifAstMove.endType) {
+                    val gameEndType = when (kifMove.endType) {
                         KifAst.Move.GameEndType.ABORT -> Move.GameEndType.ABORT
                         KifAst.Move.GameEndType.RESIGN -> Move.GameEndType.RESIGN
                         KifAst.Move.GameEndType.JISHOGI -> Move.GameEndType.JISHOGI
@@ -154,13 +153,13 @@ data class GameImpl private constructor(
 
                 is KifAst.Move.Regular -> {
                     val capturedKoma =
-                        posBeforeMove.getKoma(kifAstMove.endSq).getOrNull()
+                        posBeforeMove.getKoma(kifMove.endSq).getOrNull()
                     Move.Regular(
-                        startSq = kifAstMove.startSq,
-                        endSq = kifAstMove.endSq,
-                        isPromotion = kifAstMove.isPromotion,
+                        startSq = kifMove.startSq,
+                        endSq = kifMove.endSq,
+                        isPromotion = kifMove.isPromotion,
                         side = side,
-                        komaType = kifAstMove.komaType,
+                        komaType = kifMove.komaType,
                         capturedKoma = capturedKoma
                     )
                 }
@@ -181,39 +180,57 @@ data class GameImpl private constructor(
             }
         }
 
+        /**
+         * Convert a Variation<KifAst.Move> to a Variation<Move>
+         * by playing out and verifying the moves as legal.
+         */
         private fun playOut(
             variation: Variation<KifAst.Move>,
             startingSide: Side,
             startPos: Position,
-        ): Variation<Move> {
-            val movePositionPairs = variation.moves
-                .fold(emptyList<Pair<Move, Position>>()) { acc, kifAstMove ->
-                    val pos = acc.lastOrNull()?.second ?: startPos
-                    val move =
-                        moveFromKifAst(
-                            kifAstMove,
-                            variation.moveNum,
-                            startingSide,
-                            pos
-                        )
-                    acc + (move to pos.doMove(move))
+        ): Either<String, Variation<Move>> {
+            return either {
+                val moves =
+                    legalMovesFromKifMoves(variation, startingSide, startPos)
+                        .bind()
+                val children = variation.branches.mapValues { (idx, children) ->
+                    val sideToMove = getSideToMove(
+                        variation.moveNum,
+                        variation.moveNum + idx,
+                        startingSide
+                    )
+                    val pos = moves
+                        .take(idx)
+                        .fold(startPos) { pos, move -> pos.doMove(move) }
+                    children
+                        .map { playOut(it, sideToMove, pos) }
+                        .bindAll()
                 }
-            val childVariations =
-                variation.branches.mapValues { (idx, children) ->
-                    children.map {
-                        val sideToMove = getSideToMove(
-                            variation.moveNum,
-                            variation.moveNum + idx,
-                            startingSide
-                        )
-                        playOut(it, sideToMove, movePositionPairs[idx].second)
-                    }
+                Variation(variation.moveNum, moves, children)
+            }
+        }
+
+        private fun legalMovesFromKifMoves(
+            variation: Variation<KifAst.Move>,
+            startingSide: Side,
+            startPos: Position,
+        ): Either<String, List<Move>> {
+            var pos = startPos
+            val moveList = mutableListOf<Move>()
+            for (kifMove in variation.moves) {
+                val move = moveFromKifAst(
+                    kifMove,
+                    variation.moveNum,
+                    startingSide,
+                    pos
+                )
+                if (!isLegal(move, pos as PositionImpl)) {
+                    return "Illegal move: ${move}".left()
                 }
-            return Variation(
-                variation.moveNum,
-                movePositionPairs.map { it.first },
-                childVariations
-            )
+                pos = pos.doMove(move)
+                moveList.add(move)
+            }
+            return moveList.right()
         }
 
         private fun traverse(
