@@ -29,5 +29,5 @@ interface Game {
 
 interface GameFactory {
     fun empty(): Game
-    fun fromKifAst(kifAst: KifAst.Game): Game
+    fun fromKifAst(kifAst: KifAst.Game<KifAst.Move>): Game
 }

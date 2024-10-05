@@ -10,7 +10,7 @@ import java.io.InputStream
 import java.io.InputStreamReader
 import java.nio.charset.Charset
 
-fun readKifFromShiftJisStream(inputStream: InputStream): KifAst.Game? {
+fun readKifFromShiftJisStream(inputStream: InputStream): KifAst.Game<KifAst.Move>? {
     val tokens = InputStreamReader(inputStream, Charset.forName("SHIFT-JIS"))
         .let(::BufferedReader)
         .let(::tokenise)
@@ -31,7 +31,7 @@ fun readKifFromShiftJisStream(inputStream: InputStream): KifAst.Game? {
 /**
  * Parse a provided KIF file.
  */
-fun readKifFile(filename: String): KifAst.Game? {
+fun readKifFile(filename: String): KifAst.Game<KifAst.Move>? {
     val buf = readFile(filename)
     val tokens = tokenise(buf)
     val (gameInfo, state1) = parseGameInformation(ParseState(tokens))
@@ -237,7 +237,7 @@ private fun parseVariation(input: ParseState): ParseResult<Variation?> {
 private fun makeMoveTree(
     mainMoves: List<KifAst.Move>,
     variationList: List<Variation>,
-): KifAst.Tree.RootNode? {
+): KifAst.Tree.RootNode<KifAst.Move>? {
     if (mainMoves.isEmpty()) {
         return null
     }
@@ -277,9 +277,12 @@ private fun makeMoveTree(
  * A mapping of move numbers to the nodes representing the variations that start
  * at that move.
  */
-private typealias BranchNodes = MutableMap<Int, ArrayDeque<KifAst.Tree.MoveNode>>
+private typealias BranchNodes = MutableMap<Int, ArrayDeque<KifAst.Tree.MoveNode<KifAst.Move>>>
 
-private fun BranchNodes.addNode(moveNum: Int, node: KifAst.Tree.MoveNode) {
+private fun BranchNodes.addNode(
+    moveNum: Int,
+    node: KifAst.Tree.MoveNode<KifAst.Move>,
+) {
     this.putIfAbsent(moveNum, ArrayDeque())
     this[moveNum]?.addFirst(node)
 }
@@ -292,10 +295,12 @@ private fun BranchNodes.addNode(moveNum: Int, node: KifAst.Tree.MoveNode) {
 private fun makeVariationNodes(
     variation: Variation,
     branches: BranchNodes,
-): KifAst.Tree.MoveNode? {
+): KifAst.Tree.MoveNode<KifAst.Move>? {
     // As variation moves are in sequence, traverse in reverse to construct
     // the chain of nodes starting from the leaf.
-    return variation.moveList.foldRight<KifAst.Move, KifAst.Tree.MoveNode?>(null) { move, acc ->
+    return variation.moveList.foldRight<KifAst.Move, KifAst.Tree.MoveNode<KifAst.Move>?>(
+        null
+    ) { move, acc ->
         val children = branches[move.moveNum + 1] ?: ArrayDeque()
         acc?.let { children.addFirst(acc) }
         KifAst.Tree.MoveNode(children, move)

@@ -6,9 +6,9 @@ import com.mfoo.shogi.Square
 import kotlin.time.Duration
 
 sealed interface KifAst {
-    class Game(
+    class Game<T>(
         val startPos: Position,
-        val rootNode: Tree.RootNode,
+        val rootNode: Tree.RootNode<T>,
         val headers: List<Header>,
     ) : KifAst {
         override fun toString(): String {
@@ -22,29 +22,29 @@ sealed interface KifAst {
         }
     }
 
-    sealed interface Tree : KifAst {
-        val children: List<MoveNode>
+    sealed interface Tree<T> : KifAst {
+        val children: List<MoveNode<T>>
 
-        data class RootNode(
-            override val children: List<MoveNode>,
-        ) : Tree {
+        data class RootNode<T>(
+            override val children: List<MoveNode<T>>,
+        ) : Tree<T> {
             override fun toString(): String {
                 return "Root node: \n${children}"
             }
         }
 
         // Be permissive and allow moves after a game termination
-        data class MoveNode(
-            override val children: List<MoveNode>,
-            val move: Move,
-        ) : Tree {
+        data class MoveNode<T>(
+            override val children: List<MoveNode<T>>,
+            val move: T,
+        ) : Tree<T> {
             override fun toString(): String {
                 return "${move} ${children.map { "\n Child of ${move} -- ${it}" }}"
             }
         }
 
 
-        fun <R> fold(acc: R, f: (R, Tree) -> R): R {
+        fun <R> fold(acc: R, f: (R, Tree<T>) -> R): R {
             return this.children
                 .fold(f(acc, this)) { a, n -> n.fold(a, f) }
         }
@@ -52,7 +52,7 @@ sealed interface KifAst {
         /**
          * Tree catamorphism.
          */
-        fun <R> cata(f: (tree: Tree, convertedSubTree: Collection<R>) -> R): R {
+        fun <R> cata(f: (tree: Tree<T>, convertedSubTree: Collection<R>) -> R): R {
             return f(this, this.children.map { it.cata(f) })
         }
     }
