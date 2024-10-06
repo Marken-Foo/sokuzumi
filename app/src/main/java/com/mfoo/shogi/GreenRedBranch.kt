@@ -1,7 +1,5 @@
 package com.mfoo.shogi
 
-import com.mfoo.shogi.kif.KifAst
-
 
 private sealed interface Path {
     /**
@@ -158,17 +156,17 @@ private fun <T> greenBranchFromTree(treeRoot: Tree.RootNode<T>): GreenBranch<T> 
 }
 
 private fun <T> traverse(
-    node: Tree.MoveNode<T>,
+    node: Tree.Node<T>,
     idxInBranch: ItemIdx = ItemIdx(0),
     mainlineMoves: List<T> = emptyList(),
 ): GreenBranch<T> {
     if (node.children.isEmpty()) {
-        return GreenBranch(mainlineMoves + node.move, emptyMap())
+        return GreenBranch(mainlineMoves + node.value, emptyMap())
     }
     val branchOfCurrentNode = traverse(
         node.children[0],
         idxInBranch.increment(),
-        mainlineMoves + node.move,
+        mainlineMoves + node.value,
     )
     return node.children.subList(1, node.children.size)
         .fold(branchOfCurrentNode) { b, n ->

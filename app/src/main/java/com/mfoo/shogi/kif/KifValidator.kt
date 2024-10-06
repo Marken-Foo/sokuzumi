@@ -31,7 +31,7 @@ fun validateKif(game: KifAst.Game<KifAst.Move>): KifAst.Game<Move> {
  */
 private fun <T> deduplicateTree(node: Tree<T>): Tree<T> {
     val newChildren = node.children
-        .groupBy { it.move }
+        .groupBy { it.value }
         .values
         .toList()
         .map { nodes ->
@@ -39,15 +39,15 @@ private fun <T> deduplicateTree(node: Tree<T>): Tree<T> {
             if (nodes.size == 1) {
                 nodes[0]
             } else {
-                Tree.MoveNode(
+                Tree.Node(
                     nodes.flatMap { it.children },
-                    nodes[0].move
+                    nodes[0].value
                 )
             }
         }
-        .map(::deduplicateTree) as List<Tree.MoveNode<T>>
+        .map(::deduplicateTree) as List<Tree.Node<T>>
     return when (node) {
-        is Tree.MoveNode -> node.copy(children = newChildren)
+        is Tree.Node -> node.copy(children = newChildren)
         is Tree.RootNode -> node.copy(children = newChildren)
     }
 }
@@ -66,15 +66,15 @@ private fun convertRoot(
  * Plays through and prunes a tree of illegal moves and their child nodes.
  */
 private fun convertTree(
-    node: Tree.MoveNode<KifAst.Move>,
+    node: Tree.Node<KifAst.Move>,
     pos: PositionImpl,
-): Tree.MoveNode<Move>? {
-    val move = moveFromKifAst(node.move, pos.getSideToMove(), pos)
+): Tree.Node<Move>? {
+    val move = moveFromKifAst(node.value, pos.getSideToMove(), pos)
     if (!isLegal(move, pos)) {
         return null
     }
     val nextPos = pos.doMove(move)
-    return Tree.MoveNode(
+    return Tree.Node(
         node.children.mapNotNull { n -> convertTree(n, nextPos) },
         move
     )

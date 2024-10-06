@@ -278,11 +278,11 @@ private fun makeMoveTree(
  * A mapping of move numbers to the nodes representing the variations that start
  * at that move.
  */
-private typealias BranchNodes = MutableMap<Int, ArrayDeque<Tree.MoveNode<KifAst.Move>>>
+private typealias BranchNodes = MutableMap<Int, ArrayDeque<Tree.Node<KifAst.Move>>>
 
 private fun BranchNodes.addNode(
     moveNum: Int,
-    node: Tree.MoveNode<KifAst.Move>,
+    node: Tree.Node<KifAst.Move>,
 ) {
     this.putIfAbsent(moveNum, ArrayDeque())
     this[moveNum]?.addFirst(node)
@@ -296,15 +296,15 @@ private fun BranchNodes.addNode(
 private fun makeVariationNodes(
     variation: Variation,
     branches: BranchNodes,
-): Tree.MoveNode<KifAst.Move>? {
+): Tree.Node<KifAst.Move>? {
     // As variation moves are in sequence, traverse in reverse to construct
     // the chain of nodes starting from the leaf.
-    return variation.moveList.foldRight<KifAst.Move, Tree.MoveNode<KifAst.Move>?>(
+    return variation.moveList.foldRight<KifAst.Move, Tree.Node<KifAst.Move>?>(
         null
     ) { move, acc ->
         val children = branches[move.moveNum + 1] ?: ArrayDeque()
         acc?.let { children.addFirst(acc) }
-        Tree.MoveNode(children, move)
+        Tree.Node(children, move)
     }
 }
 

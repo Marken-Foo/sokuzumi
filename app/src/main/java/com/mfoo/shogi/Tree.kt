@@ -1,10 +1,10 @@
 package com.mfoo.shogi
 
 sealed interface Tree<T> {
-    val children: List<MoveNode<T>>
+    val children: List<Node<T>>
 
     data class RootNode<T>(
-        override val children: List<MoveNode<T>>,
+        override val children: List<Node<T>>,
     ) : Tree<T> {
         override fun toString(): String {
             return "Root node: \n${children}"
@@ -12,12 +12,12 @@ sealed interface Tree<T> {
     }
 
     // Be permissive and allow moves after a game termination
-    data class MoveNode<T>(
-        override val children: List<MoveNode<T>>,
-        val move: T,
+    data class Node<T>(
+        override val children: List<Node<T>>,
+        val value: T,
     ) : Tree<T> {
         override fun toString(): String {
-            return "${move} ${children.map { "\n Child of ${move} -- ${it}" }}"
+            return "${value} ${children.map { "\n Child of ${value} -- ${it}" }}"
         }
     }
 
