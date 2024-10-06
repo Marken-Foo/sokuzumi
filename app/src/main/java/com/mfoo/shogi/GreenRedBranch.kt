@@ -137,7 +137,7 @@ internal class RedGreenBranches<T> private constructor(
     }
 
     companion object {
-        fun <T> fromTree(treeRoot: KifAst.Tree.RootNode<T>): RedGreenBranches<T> {
+        fun <T> fromTree(treeRoot: Tree.RootNode<T>): RedGreenBranches<T> {
             return greenBranchFromTree(treeRoot).let {
                 RedGreenBranches(it, RedBranch(it, null), Path.empty())
             }
@@ -145,7 +145,7 @@ internal class RedGreenBranches<T> private constructor(
     }
 }
 
-private fun <T> greenBranchFromTree(treeRoot: KifAst.Tree.RootNode<T>): GreenBranch<T> {
+private fun <T> greenBranchFromTree(treeRoot: Tree.RootNode<T>): GreenBranch<T> {
     return if (treeRoot.children.isEmpty()) {
         GreenBranch(emptyList(), emptyMap())
     } else {
@@ -158,7 +158,7 @@ private fun <T> greenBranchFromTree(treeRoot: KifAst.Tree.RootNode<T>): GreenBra
 }
 
 private fun <T> traverse(
-    node: KifAst.Tree.MoveNode<T>,
+    node: Tree.MoveNode<T>,
     idxInBranch: ItemIdx = ItemIdx(0),
     mainlineMoves: List<T> = emptyList(),
 ): GreenBranch<T> {

@@ -4,6 +4,7 @@ import com.mfoo.shogi.Move
 import com.mfoo.shogi.Position
 import com.mfoo.shogi.PositionImpl
 import com.mfoo.shogi.Side
+import com.mfoo.shogi.Tree
 import com.mfoo.shogi.isLegal
 
 
@@ -19,7 +20,7 @@ fun validateKif(game: KifAst.Game<KifAst.Move>): KifAst.Game<Move> {
         convertRoot(
             game.rootNode,
             game.startPos as PositionImpl
-        ).let(::deduplicateTree) as KifAst.Tree.RootNode,
+        ).let(::deduplicateTree) as Tree.RootNode,
         game.headers
     )
 }
@@ -28,7 +29,7 @@ fun validateKif(game: KifAst.Game<KifAst.Move>): KifAst.Game<Move> {
  * If a node has multiple children with the same (move) value,
  * collapse the child nodes into a single child node.
  */
-private fun <T> deduplicateTree(node: KifAst.Tree<T>): KifAst.Tree<T> {
+private fun <T> deduplicateTree(node: Tree<T>): Tree<T> {
     val newChildren = node.children
         .groupBy { it.move }
         .values
@@ -38,25 +39,25 @@ private fun <T> deduplicateTree(node: KifAst.Tree<T>): KifAst.Tree<T> {
             if (nodes.size == 1) {
                 nodes[0]
             } else {
-                KifAst.Tree.MoveNode(
+                Tree.MoveNode(
                     nodes.flatMap { it.children },
                     nodes[0].move
                 )
             }
         }
-        .map(::deduplicateTree) as List<KifAst.Tree.MoveNode<T>>
+        .map(::deduplicateTree) as List<Tree.MoveNode<T>>
     return when (node) {
-        is KifAst.Tree.MoveNode -> node.copy(children = newChildren)
-        is KifAst.Tree.RootNode -> node.copy(children = newChildren)
+        is Tree.MoveNode -> node.copy(children = newChildren)
+        is Tree.RootNode -> node.copy(children = newChildren)
     }
 }
 
 
 private fun convertRoot(
-    root: KifAst.Tree.RootNode<KifAst.Move>,
+    root: Tree.RootNode<KifAst.Move>,
     pos: PositionImpl,
-): KifAst.Tree.RootNode<Move> {
-    return KifAst.Tree.RootNode(root.children.mapNotNull { n ->
+): Tree.RootNode<Move> {
+    return Tree.RootNode(root.children.mapNotNull { n ->
         convertTree(n, pos)
     })
 }
@@ -65,15 +66,15 @@ private fun convertRoot(
  * Plays through and prunes a tree of illegal moves and their child nodes.
  */
 private fun convertTree(
-    node: KifAst.Tree.MoveNode<KifAst.Move>,
+    node: Tree.MoveNode<KifAst.Move>,
     pos: PositionImpl,
-): KifAst.Tree.MoveNode<Move>? {
+): Tree.MoveNode<Move>? {
     val move = moveFromKifAst(node.move, pos.getSideToMove(), pos)
     if (!isLegal(move, pos)) {
         return null
     }
     val nextPos = pos.doMove(move)
-    return KifAst.Tree.MoveNode(
+    return Tree.MoveNode(
         node.children.mapNotNull { n -> convertTree(n, nextPos) },
         move
     )

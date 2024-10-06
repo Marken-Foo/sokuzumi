@@ -3,6 +3,7 @@ package com.mfoo.shogi.kif
 import com.mfoo.shogi.Position
 import com.mfoo.shogi.PositionImpl
 import com.mfoo.shogi.Square
+import com.mfoo.shogi.Tree
 import com.mfoo.shogi.bod.parseBod
 import com.mfoo.shogi.readFile
 import java.io.BufferedReader
@@ -237,7 +238,7 @@ private fun parseVariation(input: ParseState): ParseResult<Variation?> {
 private fun makeMoveTree(
     mainMoves: List<KifAst.Move>,
     variationList: List<Variation>,
-): KifAst.Tree.RootNode<KifAst.Move>? {
+): Tree.RootNode<KifAst.Move>? {
     if (mainMoves.isEmpty()) {
         return null
     }
@@ -270,18 +271,18 @@ private fun makeMoveTree(
     if (branches.size != 1) {
         return null
     }
-    return KifAst.Tree.RootNode(branches.values.toList()[0])
+    return Tree.RootNode(branches.values.toList()[0])
 }
 
 /**
  * A mapping of move numbers to the nodes representing the variations that start
  * at that move.
  */
-private typealias BranchNodes = MutableMap<Int, ArrayDeque<KifAst.Tree.MoveNode<KifAst.Move>>>
+private typealias BranchNodes = MutableMap<Int, ArrayDeque<Tree.MoveNode<KifAst.Move>>>
 
 private fun BranchNodes.addNode(
     moveNum: Int,
-    node: KifAst.Tree.MoveNode<KifAst.Move>,
+    node: Tree.MoveNode<KifAst.Move>,
 ) {
     this.putIfAbsent(moveNum, ArrayDeque())
     this[moveNum]?.addFirst(node)
@@ -295,15 +296,15 @@ private fun BranchNodes.addNode(
 private fun makeVariationNodes(
     variation: Variation,
     branches: BranchNodes,
-): KifAst.Tree.MoveNode<KifAst.Move>? {
+): Tree.MoveNode<KifAst.Move>? {
     // As variation moves are in sequence, traverse in reverse to construct
     // the chain of nodes starting from the leaf.
-    return variation.moveList.foldRight<KifAst.Move, KifAst.Tree.MoveNode<KifAst.Move>?>(
+    return variation.moveList.foldRight<KifAst.Move, Tree.MoveNode<KifAst.Move>?>(
         null
     ) { move, acc ->
         val children = branches[move.moveNum + 1] ?: ArrayDeque()
         acc?.let { children.addFirst(acc) }
-        KifAst.Tree.MoveNode(children, move)
+        Tree.MoveNode(children, move)
     }
 }
 
