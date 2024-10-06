@@ -1,7 +1,9 @@
 package com.mfoo.shogi
 
+import com.mfoo.shogi.kif.KifAst
 
-internal sealed interface Path {
+
+private sealed interface Path {
     /**
      * One-indexed
      */
@@ -13,13 +15,19 @@ internal sealed interface Path {
         val branchIdx: Int,
         val next: Path,
     ) : Path
+
+    companion object {
+        fun empty(): Terminal {
+            return Terminal(ItemIdx(0))
+        }
+    }
 }
 
 /**
  * Represents the 1-indexed position of an item within a branch.
  */
 @JvmInline
-internal value class ItemIdx(val t: Int) {
+private value class ItemIdx(val t: Int) {
     fun increment(): ItemIdx {
         return ItemIdx(this.t + 1)
     }
@@ -28,7 +36,7 @@ internal value class ItemIdx(val t: Int) {
 /**
  * Local branch structure, unaware of global position.
  */
-internal data class GreenBranch<T>(
+private data class GreenBranch<T>(
     val items: List<T>,
     val children: Map<ItemIdx, List<GreenBranch<T>>>,
 ) {
@@ -114,8 +122,59 @@ internal data class GreenBranch<T>(
     }
 }
 
-internal data class RedBranch<T>(
+private data class RedBranch<T>(
     private val value: GreenBranch<T>,
     private val parent: RedBranch<T>?,
-    private val path: Path,
 )
+
+internal class RedGreenBranches<T> private constructor(
+    private val greenRoot: GreenBranch<T>,
+    private val redBranch: RedBranch<T>,
+    private val location: Path,
+) {
+    override fun toString(): String {
+        return greenRoot.toString()
+    }
+
+    companion object {
+        fun <T> fromTree(treeRoot: KifAst.Tree.RootNode<T>): RedGreenBranches<T> {
+            return greenBranchFromTree(treeRoot).let {
+                RedGreenBranches(it, RedBranch(it, null), Path.empty())
+            }
+        }
+    }
+}
+
+private fun <T> greenBranchFromTree(treeRoot: KifAst.Tree.RootNode<T>): GreenBranch<T> {
+    return if (treeRoot.children.isEmpty()) {
+        GreenBranch(emptyList(), emptyMap())
+    } else {
+        val mainBranch = traverse(treeRoot.children[0])
+        treeRoot.children.let { it.subList(1, it.size) }
+            .fold(mainBranch) { b, n ->
+                b.addBranch(traverse(n), Path.Terminal(ItemIdx(0))) ?: b
+            }
+    }
+}
+
+private fun <T> traverse(
+    node: KifAst.Tree.MoveNode<T>,
+    idxInBranch: ItemIdx = ItemIdx(0),
+    mainlineMoves: List<T> = emptyList(),
+): GreenBranch<T> {
+    if (node.children.isEmpty()) {
+        return GreenBranch(mainlineMoves + node.move, emptyMap())
+    }
+    val branchOfCurrentNode = traverse(
+        node.children[0],
+        idxInBranch.increment(),
+        mainlineMoves + node.move,
+    )
+    return node.children.subList(1, node.children.size)
+        .fold(branchOfCurrentNode) { b, n ->
+            b.addBranch(
+                traverse(n),
+                Path.Terminal(idxInBranch.increment())
+            ) ?: b
+        }
+}
