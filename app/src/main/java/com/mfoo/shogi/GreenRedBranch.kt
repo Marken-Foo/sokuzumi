@@ -5,13 +5,13 @@ package com.mfoo.shogi
  * Recursive structure describing a path from a branch to one of its
  * descendants.
  */
-private sealed interface PathToBranch {
+private sealed interface Path {
     fun append(idx: ItemIdx, branchIdx: Int): Segment
 
     /**
      * Marks the end of a path.
      */
-    data object Terminal : PathToBranch {
+    data object Terminal : Path {
         override fun append(idx: ItemIdx, branchIdx: Int): Segment {
             return Segment(idx, branchIdx, Terminal)
         }
@@ -24,8 +24,8 @@ private sealed interface PathToBranch {
     data class Segment(
         val idx: ItemIdx,
         val branchIdx: Int,
-        val next: PathToBranch,
-    ) : PathToBranch {
+        val next: Path,
+    ) : Path {
         override fun append(idx: ItemIdx, branchIdx: Int): Segment {
             return this.copy(next = next.append(idx, branchIdx))
         }
@@ -36,15 +36,15 @@ private sealed interface PathToBranch {
  * Data structure containing the children of a branch (red or green).
  * At a given `ItemIdx`, there is an ordered list of children.
  */
-private class Children<T>(val t: Map<ItemIdx, List<T>> = emptyMap()) {
-    fun get(itemIdx: ItemIdx, branchIdx: Int): T? {
+private class Children<B>(val t: Map<ItemIdx, List<B>> = emptyMap()) {
+    fun get(itemIdx: ItemIdx, branchIdx: Int): B? {
         return t[itemIdx]?.getOrNull(branchIdx)
     }
 
-    fun addAt(itemIdx: ItemIdx, item: T): Children<T> {
+    fun addAt(itemIdx: ItemIdx, branch: B): Children<B> {
         return t[itemIdx]
-            ?.let { Children(t + (itemIdx to it + item)) }
-            ?: Children(t + (itemIdx to listOf(item)))
+            ?.let { Children(t + (itemIdx to it + branch)) }
+            ?: Children(t + (itemIdx to listOf(branch)))
     }
 
     private fun <S> List<S>.replaceAt(item: S, idx: Int): List<S>? {
@@ -55,17 +55,13 @@ private class Children<T>(val t: Map<ItemIdx, List<T>> = emptyMap()) {
         }
     }
 
-    fun updateAt(
-        itemIdx: ItemIdx,
-        branchIdx: Int,
-        item: T,
-    ): Children<T>? {
+    fun updateAt(itemIdx: ItemIdx, branchIdx: Int, branch: B): Children<B>? {
         return t[itemIdx]
-            ?.replaceAt(item, branchIdx)
+            ?.replaceAt(branch, branchIdx)
             ?.let { Children(t + (itemIdx to it)) }
     }
 
-    fun findAt(itemIdx: ItemIdx, predicate: (T) -> Boolean): Pair<Int, T>? {
+    fun findAt(itemIdx: ItemIdx, predicate: (B) -> Boolean): Pair<Int, B>? {
         return t[itemIdx]
             ?.indexOfFirst(predicate)
             ?.let { if (it == -1) null else (it to t[itemIdx]!![it]) }
@@ -105,7 +101,7 @@ private data class GreenBranch<T>(
         return 0 <= idx.t && idx.t < items.size
     }
 
-    fun get(idx: ItemIdx): T? {
+    fun getAt(idx: ItemIdx): T? {
         return items[idx.t]
     }
 
@@ -145,7 +141,7 @@ private class RedBranch<T>(
     }
 
     fun getAt(idx: ItemIdx): T? {
-        return this.value.get(idx)
+        return this.value.getAt(idx)
     }
 
     fun findBranchIdx(
@@ -194,7 +190,7 @@ private class RedBranch<T>(
 internal class RedGreenBranches<T> private constructor(
     private val greenRoot: GreenBranch<T>,
     private val currentBranch: RedBranch<T>,
-    private val pathFromRoot: PathToBranch,
+    private val pathFromRoot: Path,
     private val idxOnBranch: ItemIdx,
 ) {
     override fun toString(): String {
@@ -204,7 +200,7 @@ internal class RedGreenBranches<T> private constructor(
     private fun copy(
         greenRoot: GreenBranch<T> = this.greenRoot,
         currentBranch: RedBranch<T> = this.currentBranch,
-        pathFromRoot: PathToBranch = this.pathFromRoot,
+        pathFromRoot: Path = this.pathFromRoot,
         idxOnBranch: ItemIdx = this.idxOnBranch,
     ): RedGreenBranches<T> {
         return RedGreenBranches(
@@ -250,7 +246,7 @@ internal class RedGreenBranches<T> private constructor(
                 RedGreenBranches(
                     it,
                     RedBranch(it, null),
-                    PathToBranch.Terminal,
+                    Path.Terminal,
                     ItemIdx(0)
                 )
             }
