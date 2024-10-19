@@ -1,40 +1,13 @@
 package com.mfoo.shogi
 
 
-/**
- * Recursive structure describing a path from a branch to one of its
- * descendants.
- */
-private sealed interface Path {
-    fun append(idx: ItemIdx, branchIdx: Int): Path
-
-    /**
-     * Marks the end of a path.
-     */
-    data object Terminal : Path {
-        override fun append(idx: ItemIdx, branchIdx: Int): Segment {
-            return Segment(idx, branchIdx, Terminal)
-        }
-    }
-
-    /**
-     * An intermediate segment in the path, describing which child
-     * to descend into, and the remaining path to follow after that.
-     */
-    data class Segment(
-        val idx: ItemIdx,
-        val branchIdx: Int,
-        val next: Path,
-    ) : Path {
-        override fun append(idx: ItemIdx, branchIdx: Int): Segment {
-            return this.copy(next = next.append(idx, branchIdx))
-        }
-    }
-
-    data class Start(val branchIdx: Int, val next: Path) : Path {
-        override fun append(idx: ItemIdx, branchIdx: Int): Start {
-            return this.copy(next = next.append(idx, branchIdx))
-        }
+private data class Path(
+    val rootIdx: Int,
+    val choices: List<Pair<ItemIdx, Int>>,
+    val finalIdx: ItemIdx,
+) {
+    fun append(idx: ItemIdx, branchIdx: Int): Path {
+        return this.copy(choices = choices + (idx to branchIdx))
     }
 }
 
@@ -76,13 +49,22 @@ private value class ItemIdx(val t: Int) {
     }
 }
 
+private class GreenRoot<T>(val branches: List<GreenBranch<T>>) {
+    override fun toString(): String {
+        return branches.toString()
+    }
+
+    fun goToBranch(branchIdx: Int): GreenBranch<T>? {
+        return branches.getOrNull(branchIdx)
+    }
+}
+
 /**
  * Immutable branch structure, unaware of global position.
  */
 private class GreenBranch<T> private constructor(
     val firstItem: T,
     val body: List<Node<T>>,
-//    val children: Children<GreenBranch<T>>,
 ) {
     // Extra parameter to avoid JVM constructor issues
     constructor(head: T, tail: List<T>, x: Any? = null) :
@@ -146,6 +128,45 @@ private class GreenBranch<T> private constructor(
     }
 }
 
+private sealed interface Red<T> {
+    fun findBranchIdx(
+        itemIdx: ItemIdx,
+        predicate: (branch: GreenBranch<T>) -> Boolean,
+    ): Int?
+}
+
+private class RedRoot<T>(private val value: GreenRoot<T>) : Red<T> {
+    private var childrenCache: Children<RedBranch<T>?> =
+        List<RedBranch<T>?>(value.branches.size) { null }
+            .let { ItemIdx(0) to it }
+            .let { Children(mapOf(it)) }
+
+    override fun findBranchIdx(
+        itemIdx: ItemIdx,
+        predicate: (branch: GreenBranch<T>) -> Boolean,
+    ): Int? {
+        return value.branches
+            .indexOfFirst(predicate)
+            .let { if (it == -1) null else it }
+    }
+
+    fun goToBranch(
+        itemIdx: ItemIdx = ItemIdx(0),
+        branchIdx: Int,
+    ): RedBranch<T>? {
+        val greenBranch = value.goToBranch(branchIdx)
+            ?: return null
+
+        return childrenCache.get(itemIdx, branchIdx)
+            ?: RedBranch(greenBranch, this)
+                .also {
+                    childrenCache =
+                        childrenCache.updateAt(itemIdx, branchIdx, it)
+                            ?: childrenCache
+                }
+    }
+}
+
 /**
  * Branch structure wrapping the immutable green branches, providing
  * a parent reference and child references. The child references are
@@ -153,8 +174,8 @@ private class GreenBranch<T> private constructor(
  */
 private class RedBranch<T>(
     private val value: GreenBranch<T>,
-    private val parent: RedBranch<T>?,
-) {
+    private val parent: Red<T>,
+) : Red<T> {
     // Populate the children cache with the appropriate number of
     // nulls so the indices are correct. Mutable.
     private var childrenCache: Children<RedBranch<T>?> =
@@ -177,11 +198,11 @@ private class RedBranch<T>(
         return this.value.getAt(idx)
     }
 
-    fun findBranchIdx(
-        idx: ItemIdx,
+    override fun findBranchIdx(
+        itemIdx: ItemIdx,
         predicate: (branch: GreenBranch<T>) -> Boolean,
     ): Int? {
-        return value.getBranches(idx)
+        return value.getBranches(itemIdx)
             ?.indexOfFirst(predicate)
             ?.let { if (it == -1) null else it }
     }
@@ -223,15 +244,14 @@ private class RedBranch<T>(
  * and more complexity in general than a simple tree.
  */
 internal class RedGreenBranches<T> private constructor(
-    private val greenRoot: List<GreenBranch<T>>,
+    private val greenRoot: GreenRoot<T>,
     private val location: Location<T>,
 ) {
     private sealed interface Location<S> {
-        class Root<S> : Location<S>
-        data class T<S>(
-            val currentBranch: RedBranch<S>,
-            val pathFromRoot: Path,
-            val idxOnBranch: ItemIdx = ItemIdx(0),
+        class Root<S>(val current: RedRoot<S>) : Location<S>
+        data class NonRoot<S>(
+            val current: RedBranch<S>,
+            val path: Path,
         ) : Location<S>
     }
 
@@ -240,7 +260,7 @@ internal class RedGreenBranches<T> private constructor(
     }
 
     private fun copy(
-        greenRoot: List<GreenBranch<T>> = this.greenRoot,
+        greenRoot: GreenRoot<T> = this.greenRoot,
         location: Location<T> = this.location,
     ): RedGreenBranches<T> {
         return RedGreenBranches(
@@ -252,21 +272,24 @@ internal class RedGreenBranches<T> private constructor(
     fun advance(): RedGreenBranches<T>? {
         when (location) {
             is Location.Root -> {
-                if (greenRoot.isEmpty()) {
+                if (greenRoot.branches.isEmpty()) {
                     return null
                 } else {
-                    val newLocation = Location.T(
-                        RedBranch(greenRoot[0], null),
-                        Path.Start(0, Path.Terminal),
+                    val newLocation = Location.NonRoot(
+                        RedBranch(greenRoot.branches[0], location.current),
+                        Path(0, emptyList(), ItemIdx(0)),
                     )
                     return RedGreenBranches(greenRoot, newLocation)
                 }
             }
 
-            is Location.T<T> -> {
-                val newIdx = location.idxOnBranch.increment()
-                return if (location.currentBranch.hasIndex(newIdx)) {
-                    this.copy(location = this.location.copy(idxOnBranch = newIdx))
+            is Location.NonRoot<T> -> {
+                val newIdx = location.path.finalIdx.increment()
+                return if (location.current.hasIndex(newIdx)) {
+                    location.path
+                        .copy(finalIdx = newIdx)
+                        .let { location.copy(path = it) }
+                        .let { this.copy(location = it) }
                 } else {
                     null
                 }
@@ -277,38 +300,41 @@ internal class RedGreenBranches<T> private constructor(
     fun advanceIfPresent(item: T): RedGreenBranches<T>? {
         when (location) {
             is Location.Root -> {
-                val branchIdx = greenRoot
+                val branchIdx = greenRoot.branches
                     .indexOfFirst { b -> b.hasAsFirstItem(item) }
                     .let { if (it == -1) null else it }
                     ?: return null
 
                 return RedGreenBranches(
                     greenRoot,
-                    Location.T(
-                        RedBranch(greenRoot[branchIdx], null),
-                        Path.Start(branchIdx, Path.Terminal),
+                    Location.NonRoot(
+                        RedBranch(
+                            greenRoot.branches[branchIdx],
+                            location.current
+                        ),
+                        Path(branchIdx, emptyList(), ItemIdx(0)),
                     )
                 )
             }
 
-            is Location.T -> {
-                val nextIdx = location.idxOnBranch.increment()
+            is Location.NonRoot -> {
+                val nextIdx = location.path.finalIdx.increment()
 
-                if (location.currentBranch.getAt(nextIdx) == item) {
+                if (location.current.getAt(nextIdx) == item) {
                     return this.advance()
                 }
 
-                val branchIdx = location.currentBranch
+                val branchIdx = location.current
                     .findBranchIdx(nextIdx) { b -> b.hasAsFirstItem(item) }
                     ?: return null
 
-                val newPath = location.pathFromRoot.append(nextIdx, branchIdx)
+                val newPath = location.path.append(nextIdx, branchIdx)
 
-                return location.currentBranch.goToBranch(nextIdx, branchIdx)
+                return location.current.goToBranch(nextIdx, branchIdx)
                     ?.let {
-                        Location.T(
-                            currentBranch = it,
-                            pathFromRoot = newPath,
+                        Location.NonRoot(
+                            current = it,
+                            path = newPath,
                         )
                     }
                     ?.let { this.copy(location = it) }
@@ -319,20 +345,18 @@ internal class RedGreenBranches<T> private constructor(
 
     companion object {
         fun <T> fromTree(treeRoot: Tree.RootNode<T>): RedGreenBranches<T> {
-            return RedGreenBranches(
-                greenBranchFromTree(treeRoot),
-                Location.Root()
-            )
+            return greenBranchFromTree(treeRoot).let {
+                RedGreenBranches(
+                    it,
+                    Location.Root(RedRoot(it)),
+                )
+            }
         }
     }
 }
 
-private fun <T> greenBranchFromTree(treeRoot: Tree.RootNode<T>): List<GreenBranch<T>> {
-    return if (treeRoot.children.isEmpty()) {
-        emptyList()
-    } else {
-        treeRoot.children.map { traverse(it) }
-    }
+private fun <T> greenBranchFromTree(treeRoot: Tree.RootNode<T>): GreenRoot<T> {
+    return GreenRoot(treeRoot.children.map { traverse(it) })
 }
 
 private fun <T> traverse(
