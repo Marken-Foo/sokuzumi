@@ -125,6 +125,10 @@ private class RedRoot<T>(private val value: GreenRoot<T>) : Red<T> {
             ?: RedBranch(greenBranch, this)
                 .also { updateCache(branchIdx, it) }
     }
+
+    fun isEmpty(): Boolean {
+        return value.branches.isEmpty()
+    }
 }
 
 /**
@@ -192,6 +196,9 @@ private sealed interface Location<T> {
 
     fun advance(): Location<T>?
     fun advanceIfPresent(item: T): Location<T>?
+    fun getCurrentItem(): T?
+    fun getNextItem(): T?
+    fun isAtLeaf(): Boolean
 
     class Root<T>(override val current: RedRoot<T>) : Location<T> {
         override fun advance(): Location<T>? {
@@ -206,6 +213,18 @@ private sealed interface Location<T> {
 
             return current.goToBranch(branchIdx)
                 ?.let { NonRoot(it, Path(branchIdx, emptyList(), ItemIdx(0))) }
+        }
+
+        override fun getCurrentItem(): T? {
+            return null
+        }
+
+        override fun getNextItem(): T? {
+            return current.goToBranch(0)?.getAt(ItemIdx(0))
+        }
+
+        override fun isAtLeaf(): Boolean {
+            return current.isEmpty()
         }
     }
 
@@ -244,6 +263,18 @@ private sealed interface Location<T> {
 
             return current.goToBranch(nextIdx, branchIdx)
                 ?.let { NonRoot(current = it, path = newPath) }
+        }
+
+        override fun getCurrentItem(): T? {
+            return current.getAt(path.finalIdx)
+        }
+
+        override fun getNextItem(): T? {
+            return current.getAt(path.finalIdx.increment())
+        }
+
+        override fun isAtLeaf(): Boolean {
+            return !current.hasIndex(path.finalIdx.increment())
         }
     }
 }
@@ -293,6 +324,18 @@ internal class RedGreenBranches<T> private constructor(
     fun advanceIfPresent(item: T): RedGreenBranches<T>? {
         return location.advanceIfPresent(item)
             ?.let { this.copy(location = it) }
+    }
+
+    fun getCurrentItem(): T? {
+        return location.getCurrentItem()
+    }
+
+    fun getNextItem(): T? {
+        return location.getNextItem()
+    }
+
+    fun isAtLeaf(): Boolean {
+        return location.isAtLeaf()
     }
 
     companion object {

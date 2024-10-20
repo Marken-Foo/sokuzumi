@@ -19,11 +19,17 @@ class GameImpl private constructor(
     }
 
     override fun advanceMove(move: Move): Either<GameError.NoSuchMove, Game> {
-        TODO("Not yet implemented")
+        val newData = gameData.advanceIfPresent(move)
+            ?: return Either.Left(GameError.NoSuchMove)
+        return Either.Right(GameImpl(newData, currentPosition.doMove(move)))
     }
 
     override fun advance(): Either<GameError.EndOfVariation, Game> {
-        TODO("Not yet implemented")
+        val newData = gameData.advance()
+            ?: return Either.Left(GameError.EndOfVariation)
+        val move = newData.getCurrentItem()
+            ?: return Either.Left(GameError.EndOfVariation)
+        return Either.Right(GameImpl(newData, currentPosition.doMove(move)))
     }
 
     override fun retract(): Either<GameError.StartOfGame, Game> {
@@ -39,11 +45,11 @@ class GameImpl private constructor(
     }
 
     override fun isAtVariationEnd(): Boolean {
-        TODO("Not yet implemented")
+        return gameData.isAtLeaf()
     }
 
     override fun getMainlineMove(): Move? {
-        TODO("Not yet implemented")
+        return gameData.getNextItem()
     }
 
     companion object : GameFactory {
@@ -52,13 +58,10 @@ class GameImpl private constructor(
         }
 
         override fun fromKifAst(kifAst: KifAst.Game<KifAst.Move>): Game {
-            val redGreenBranches = kifAst
+            return kifAst
                 .let(::validateKif)
                 .let { RedGreenBranches.fromTree(it.rootNode) }
-            return GameImpl(
-                redGreenBranches,
-                kifAst.startPos as PositionImpl,
-            )
+                .let { GameImpl(it, kifAst.startPos as PositionImpl) }
         }
     }
 }
