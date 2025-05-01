@@ -2,11 +2,11 @@ package com.mfoo.shogi
 
 
 private data class Path(
-    val rootIdx: Int,
-    val choices: List<Pair<ItemIdx, Int>>,
+    val rootIdx: BranchIdx,
+    val choices: List<Pair<ItemIdx, BranchIdx>>,
     val finalIdx: ItemIdx,
 ) {
-    fun append(idx: ItemIdx, branchIdx: Int): Path {
+    fun append(idx: ItemIdx, branchIdx: BranchIdx): Path {
         return this.copy(choices = choices + (idx to branchIdx))
     }
 }
@@ -21,13 +21,19 @@ private value class ItemIdx(val t: Int) {
     }
 }
 
+/**
+ * Represents the index of a branch among the options at one item.
+ */
+@JvmInline
+private value class BranchIdx(val t: Int)
+
 private class GreenRoot<T>(val branches: List<GreenBranch<T>>) {
     override fun toString(): String {
         return branches.toString()
     }
 
-    fun goToBranch(branchIdx: Int): GreenBranch<T>? {
-        return branches.getOrNull(branchIdx)
+    fun goToBranch(branchIdx: BranchIdx): GreenBranch<T>? {
+        return branches.getOrNull(branchIdx.t)
     }
 }
 
@@ -91,8 +97,8 @@ private class GreenBranch<T> private constructor(
             ?.let { this.copy(body = it) }
     }
 
-    fun goToBranch(itemIdx: ItemIdx, branchIdx: Int): GreenBranch<T>? {
-        return getBranches(itemIdx)?.getOrNull(branchIdx)
+    fun goToBranch(itemIdx: ItemIdx, branchIdx: BranchIdx): GreenBranch<T>? {
+        return getBranches(itemIdx)?.getOrNull(branchIdx.t)
     }
 
     fun hasAsFirstItem(item: T): Boolean {
@@ -106,22 +112,22 @@ private class RedRoot<T>(private val value: GreenRoot<T>) : Red<T> {
     private var childrenCache: List<RedBranch<T>?> =
         List<RedBranch<T>?>(value.branches.size) { null }
 
-    private fun updateCache(branchIdx: Int, branch: RedBranch<T>) {
+    private fun updateCache(branchIdx: BranchIdx, branch: RedBranch<T>) {
         childrenCache =
-            childrenCache.replaceAt(branch, branchIdx) ?: childrenCache
+            childrenCache.replaceAt(branch, branchIdx.t) ?: childrenCache
     }
 
-    fun findBranchIdx(predicate: (branch: GreenBranch<T>) -> Boolean): Int? {
+    fun findBranchIdx(predicate: (branch: GreenBranch<T>) -> Boolean): BranchIdx? {
         return value.branches
             .indexOfFirst(predicate)
-            .let { if (it == -1) null else it }
+            .let { if (it == -1) null else BranchIdx(it) }
     }
 
-    fun goToBranch(branchIdx: Int): RedBranch<T>? {
+    fun goToBranch(branchIdx: BranchIdx): RedBranch<T>? {
         val greenBranch = value.goToBranch(branchIdx)
             ?: return null
 
-        return childrenCache.getOrNull(branchIdx)
+        return childrenCache.getOrNull(branchIdx.t)
             ?: RedBranch(greenBranch, this)
                 .also { updateCache(branchIdx, it) }
     }
@@ -154,11 +160,11 @@ private class RedBranch<T>(
 
     private fun updateAt(
         itemIdx: ItemIdx,
-        branchIdx: Int,
+        branchIdx: BranchIdx,
         branch: RedBranch<T>,
     ) {
         childrenCache = childrenCache[itemIdx]
-            ?.replaceAt(branch, branchIdx)
+            ?.replaceAt(branch, branchIdx.t)
             ?.let { childrenCache + (itemIdx to it) }
             ?: childrenCache
     }
@@ -174,18 +180,18 @@ private class RedBranch<T>(
     fun findBranchIdx(
         itemIdx: ItemIdx,
         predicate: (branch: GreenBranch<T>) -> Boolean,
-    ): Int? {
+    ): BranchIdx? {
         return value.getBranches(itemIdx)
             ?.indexOfFirst(predicate)
-            ?.let { if (it == -1) null else it }
+            ?.let { if (it == -1) null else BranchIdx(it) }
     }
 
-    fun goToBranch(itemIdx: ItemIdx, branchIdx: Int): RedBranch<T>? {
+    fun goToBranch(itemIdx: ItemIdx, branchIdx: BranchIdx): RedBranch<T>? {
         val greenBranch = value.goToBranch(itemIdx, branchIdx)
             ?: return null
 
         return childrenCache[itemIdx]
-            ?.getOrNull(branchIdx)
+            ?.getOrNull(branchIdx.t)
             ?: RedBranch(greenBranch, this)
                 .also { updateAt(itemIdx, branchIdx, it) }
     }
@@ -202,8 +208,8 @@ private sealed interface Location<T> {
 
     class Root<T>(override val current: RedRoot<T>) : Location<T> {
         override fun advance(): Location<T>? {
-            return current.goToBranch(0)
-                ?.let { NonRoot(it, Path(0, emptyList(), ItemIdx(0))) }
+            return current.goToBranch(BranchIdx(0))
+                ?.let { NonRoot(it, Path(BranchIdx(0), emptyList(), ItemIdx(0))) }
         }
 
         override fun advanceIfPresent(item: T): Location<T>? {
@@ -220,7 +226,7 @@ private sealed interface Location<T> {
         }
 
         override fun getNextItem(): T? {
-            return current.goToBranch(0)?.getAt(ItemIdx(0))
+            return current.goToBranch(BranchIdx(0))?.getAt(ItemIdx(0))
         }
 
         override fun isAtLeaf(): Boolean {
