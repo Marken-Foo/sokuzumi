@@ -8,7 +8,7 @@ import com.mfoo.shogi.kif.validateKif
 
 class GameImpl private constructor(
     private val gameData: RedGreenBranches<Move>,
-    private val currentPosition: PositionImpl,
+    val currentPosition: PositionImpl,
 ) : Game {
     override fun toString(): String {
         return gameData.toString()
