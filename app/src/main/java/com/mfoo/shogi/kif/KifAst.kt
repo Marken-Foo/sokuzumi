@@ -3,12 +3,13 @@ package com.mfoo.shogi.kif
 import com.mfoo.shogi.KomaType
 import com.mfoo.shogi.Position
 import com.mfoo.shogi.Square
+import com.mfoo.shogi.Tree
 import kotlin.time.Duration
 
 sealed interface KifAst {
-    class Game(
+    class Game<T>(
         val startPos: Position,
-        val rootNode: RootNode,
+        val rootNode: Tree.RootNode<T>,
         val headers: List<Header>,
     ) : KifAst {
         override fun toString(): String {
@@ -19,24 +20,6 @@ sealed interface KifAst {
     class Header(val key: String, val value: String) : KifAst {
         override fun toString(): String {
             return "Header[${key}: ${value}]"
-        }
-    }
-
-    data class RootNode(
-        val children: List<MoveNode>,
-    ) : KifAst {
-        override fun toString(): String {
-            return "Root node: \n${children}"
-        }
-    }
-
-    // Be permissive and allow moves after a game termination
-    data class MoveNode(
-        val children: List<MoveNode>,
-        val move: Move,
-    ) : KifAst {
-        override fun toString(): String {
-            return "${move} ${children.map { "\n Child of ${move} -- ${it}" }}"
         }
     }
 

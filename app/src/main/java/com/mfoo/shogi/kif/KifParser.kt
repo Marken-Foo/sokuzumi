@@ -3,13 +3,36 @@ package com.mfoo.shogi.kif
 import com.mfoo.shogi.Position
 import com.mfoo.shogi.PositionImpl
 import com.mfoo.shogi.Square
+import com.mfoo.shogi.Tree
 import com.mfoo.shogi.bod.parseBod
 import com.mfoo.shogi.readFile
+import java.io.BufferedReader
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.nio.charset.Charset
+
+fun readKifFromShiftJisStream(inputStream: InputStream): KifAst.Game<KifAst.Move>? {
+    val tokens = InputStreamReader(inputStream, Charset.forName("SHIFT-JIS"))
+        .let(::BufferedReader)
+        .let(::tokenise)
+    val (gameInfo, state1) = parseGameInformation(ParseState(tokens))
+    val (moveList, state2) = parseMainMoveSection(state1)
+    val (variationList, _) = parseVariationSection(state2)
+
+    val rootNode = makeMoveTree(moveList, variationList)
+    return rootNode?.let {
+        KifAst.Game(
+            gameInfo.startPosition,
+            rootNode,
+            gameInfo.headers,
+        )
+    }
+}
 
 /**
  * Parse a provided KIF file.
  */
-fun readKifFile(filename: String): KifAst.Game? {
+fun readKifFile(filename: String): KifAst.Game<KifAst.Move>? {
     val buf = readFile(filename)
     val tokens = tokenise(buf)
     val (gameInfo, state1) = parseGameInformation(ParseState(tokens))
@@ -215,7 +238,7 @@ private fun parseVariation(input: ParseState): ParseResult<Variation?> {
 private fun makeMoveTree(
     mainMoves: List<KifAst.Move>,
     variationList: List<Variation>,
-): KifAst.RootNode? {
+): Tree.RootNode<KifAst.Move>? {
     if (mainMoves.isEmpty()) {
         return null
     }
@@ -248,16 +271,19 @@ private fun makeMoveTree(
     if (branches.size != 1) {
         return null
     }
-    return KifAst.RootNode(branches.values.toList()[0])
+    return Tree.RootNode(branches.values.toList()[0])
 }
 
 /**
  * A mapping of move numbers to the nodes representing the variations that start
  * at that move.
  */
-private typealias BranchNodes = MutableMap<Int, ArrayDeque<KifAst.MoveNode>>
+private typealias BranchNodes = MutableMap<Int, ArrayDeque<Tree.Node<KifAst.Move>>>
 
-private fun BranchNodes.addNode(moveNum: Int, node: KifAst.MoveNode) {
+private fun BranchNodes.addNode(
+    moveNum: Int,
+    node: Tree.Node<KifAst.Move>,
+) {
     this.putIfAbsent(moveNum, ArrayDeque())
     this[moveNum]?.addFirst(node)
 }
@@ -270,13 +296,15 @@ private fun BranchNodes.addNode(moveNum: Int, node: KifAst.MoveNode) {
 private fun makeVariationNodes(
     variation: Variation,
     branches: BranchNodes,
-): KifAst.MoveNode? {
+): Tree.Node<KifAst.Move>? {
     // As variation moves are in sequence, traverse in reverse to construct
     // the chain of nodes starting from the leaf.
-    return variation.moveList.foldRight<KifAst.Move, KifAst.MoveNode?>(null) { move, acc ->
+    return variation.moveList.foldRight<KifAst.Move, Tree.Node<KifAst.Move>?>(
+        null
+    ) { move, acc ->
         val children = branches[move.moveNum + 1] ?: ArrayDeque()
         acc?.let { children.addFirst(acc) }
-        KifAst.MoveNode(children, move)
+        Tree.Node(children, move)
     }
 }
 

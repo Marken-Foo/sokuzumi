@@ -2,6 +2,7 @@ package com.mfoo.shogi
 
 import arrow.core.Either
 import com.mfoo.shogi.bod.BodAst
+import com.mfoo.shogi.sfen.SfenAst
 import com.mfoo.shogi.sfen.parseSfen
 
 
@@ -179,7 +180,10 @@ data class PositionImpl(
         }
 
         override fun fromSfen(sfen: String): PositionImpl? {
-            val sfenTree = parseSfen(sfen) ?: return null
+            return parseSfen(sfen)?.let(::fromSfenAst) ?: return null
+        }
+
+        override fun fromSfenAst(sfenTree: SfenAst.ShogiPosition): PositionImpl {
             return empty()
                 .let {
                     var pos = it

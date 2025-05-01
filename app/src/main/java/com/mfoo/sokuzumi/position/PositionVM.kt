@@ -14,7 +14,7 @@ import com.mfoo.shogi.isLegal
 
 
 // MVVM "ViewModel" in the app
-class PositionVM {
+class PositionVM(private var pos: PositionImpl) {
     private sealed interface Selected {
         data object None : Selected
         class Square(val t: com.mfoo.shogi.Square) : Selected
@@ -22,13 +22,6 @@ class PositionVM {
     }
 
     private data class PromotionInfo(val move: Move.Regular)
-
-    // private val tempSfen = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"
-    private val tempSfen =
-        "5+N2l/1+R1p3k1/2+N1p2p1/L4p2p/2Pr1np2/3gP3P/p4PPP1/5SK2/5G1NL b 2G2S4P2bslp 87"
-    private var pos: PositionImpl =
-        PositionImpl.fromSfen(tempSfen)
-            ?: PositionImpl.empty()
 
     private var selection: Selected = Selected.None
     private var pendingPromotion: PromotionInfo? = null
