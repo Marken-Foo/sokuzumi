@@ -5,7 +5,7 @@ internal sealed interface Red<T>
 
 internal class RedRoot<T>(private val value: GreenRoot<T>) : Red<T> {
     private var childrenCache: List<RedBranch<T>?> =
-        List<RedBranch<T>?>(value.branches.size) { null }
+        List<RedBranch<T>?>(value.children.size) { null }
 
     private fun updateCache(branchIdx: BranchIdx, branch: RedBranch<T>) {
         childrenCache =
@@ -13,7 +13,7 @@ internal class RedRoot<T>(private val value: GreenRoot<T>) : Red<T> {
     }
 
     fun findBranchIdx(predicate: (branch: GreenBranch<T>) -> Boolean): BranchIdx? {
-        return value.branches
+        return value.children
             .indexOfFirst(predicate)
             .let { if (it == -1) null else BranchIdx(it) }
     }
@@ -28,7 +28,7 @@ internal class RedRoot<T>(private val value: GreenRoot<T>) : Red<T> {
     }
 
     fun isEmpty(): Boolean {
-        return value.branches.isEmpty()
+        return value.children.isEmpty()
     }
 }
 

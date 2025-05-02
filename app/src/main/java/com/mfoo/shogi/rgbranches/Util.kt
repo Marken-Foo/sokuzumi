@@ -1,13 +1,15 @@
 package com.mfoo.shogi.rgbranches
 
+import kotlin.math.max
+
 /**
  * Represents the (0-indexed) position of an item within a single branch.
  */
 @JvmInline
 internal value class ItemIdx(val t: Int) {
-    fun increment(): ItemIdx {
-        return ItemIdx(this.t + 1)
-    }
+    fun increment(): ItemIdx = ItemIdx(this.t + 1)
+
+    fun decrement(): ItemIdx = ItemIdx(max(0, this.t - 1))
 }
 
 /**
