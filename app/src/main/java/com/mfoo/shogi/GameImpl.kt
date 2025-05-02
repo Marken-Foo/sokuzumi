@@ -4,6 +4,7 @@ import arrow.core.Either
 import com.mfoo.shogi.kif.KifAst
 import com.mfoo.shogi.kif.readKifFile
 import com.mfoo.shogi.kif.validateKif
+import com.mfoo.shogi.rgbranches.RedGreenBranches
 
 
 class GameImpl private constructor(
