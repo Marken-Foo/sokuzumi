@@ -14,13 +14,7 @@ internal class GreenRoot<T>(internal val children: GreenBranching<T>) {
             GreenRoot(children.add(item))
         } else {
             goToBranch(path.rootIdx)
-                ?.addItem(
-                    item,
-                    PartialPath(
-                        choices = path.choices,
-                        finalIdx = path.finalIdx
-                    )
-                )
+                ?.addItem(item, path.getPartialPath())
                 ?.let { children.replaceAt(it, path.rootIdx) }
                 ?.let { GreenRoot(it) }
         }
@@ -112,7 +106,8 @@ internal class GreenBranch<T> constructor(
     }
 
     fun addItem(item: T, path: PartialPath): GreenBranch<T>? {
-        if (path.choices.isEmpty()) {
+        val (head, tail) = path.pop()
+        if (head == null) {
             val isAtBranchEnd = this.body.size == path.finalIdx.t
             if (isAtBranchEnd) {
                 return addToEnd(Node(item, GreenBranching()))
@@ -125,14 +120,13 @@ internal class GreenBranch<T> constructor(
             return node.add(GreenBranch(item))
                 .let { this.replaceAt(it, path.finalIdx) }
         } else {
-            val (itemIdx, branchIdx) = path.choices.first()
-            val oldNode = getNode(itemIdx)
+            val (iIdx, bIdx) = head
+            val oldNode = getNode(iIdx)
                 ?: return null
-            val nextPath = path.copy(choices = path.choices.drop(1))
-            return goToBranch(itemIdx, branchIdx)
-                ?.addItem(item, nextPath)
-                ?.let { oldNode.replaceAt(it, branchIdx) }
-                ?.let { this.replaceAt(it, itemIdx) }
+            return goToBranch(iIdx, bIdx)
+                ?.addItem(item, tail)
+                ?.let { oldNode.replaceAt(it, bIdx) }
+                ?.let { this.replaceAt(it, iIdx) }
         }
     }
 

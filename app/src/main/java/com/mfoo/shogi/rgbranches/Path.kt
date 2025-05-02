@@ -9,6 +9,10 @@ internal data class Path(
     fun append(idx: ItemIdx, branchIdx: BranchIdx): Path {
         return this.copy(choices = choices + (idx to branchIdx))
     }
+
+    fun getPartialPath(): PartialPath {
+        return PartialPath(choices, finalIdx)
+    }
 }
 
 internal data class PartialPath(
@@ -17,5 +21,9 @@ internal data class PartialPath(
 ) {
     fun append(itemIdx: ItemIdx, branchIdx: BranchIdx): PartialPath {
         return this.copy(choices = choices + (itemIdx to branchIdx))
+    }
+
+    fun pop(): Pair<Pair<ItemIdx, BranchIdx>?, PartialPath> {
+        return Pair(choices.firstOrNull(), copy(choices = choices.drop(1)))
     }
 }
