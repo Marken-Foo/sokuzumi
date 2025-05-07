@@ -1,6 +1,12 @@
 package com.mfoo.shogi.rgbranches
 
-internal class GreenRoot<T>(internal val children: GreenBranching<T>) {
+internal class GreenRoot<T> private constructor(private val children: GreenBranching<T>) {
+    constructor(branches: List<GreenBranch<T>>) : this(
+        children = GreenBranching(
+            branches
+        )
+    )
+
     override fun toString(): String {
         return children.toString()
     }
@@ -9,31 +15,37 @@ internal class GreenRoot<T>(internal val children: GreenBranching<T>) {
         return children.getOrNull(branchIdx)
     }
 
-    fun addItem(item: T, path: Path?): GreenRoot<T>? {
-        return if (path == null) {
-            GreenRoot(children.add(item))
-        } else {
-            goToBranch(path.rootIdx)
-                ?.addItem(item, path.getPartialPath())
-                ?.let { children.replaceAt(it, path.rootIdx) }
-                ?.let { GreenRoot(it) }
+    fun addItem(item: T, path: Path): GreenRoot<T>? {
+        return when (path) {
+            Path.Root -> return GreenRoot(children.add(item))
+            is Path.T -> {
+                goToBranch(path.rootIdx)
+                    ?.addItem(item, path.getPartialPath())
+                    ?.let { children.replaceAt(it, path.rootIdx) }
+                    ?.let { GreenRoot(it) }
+            }
         }
+    }
+
+    fun listBranches(): List<GreenBranch<T>> {
+        return children.listBranches()
     }
 }
 
 /**
  * Immutable branch structure, unaware of global position.
  */
-internal class GreenBranch<T> constructor(
+internal class GreenBranch<T> private constructor(
     val firstItem: T,
-    val body: List<Node<T>> = emptyList(),
+    internal val body: List<Node<T>> = emptyList(),
 ) {
     // Extra parameter to avoid JVM constructor issues
     constructor(head: T, tail: List<T>, x: Any? = null) :
         this(head, tail.map { Node(it, GreenBranching()) })
 
+    constructor(head: T) : this(firstItem = head)
 
-    class Node<T>(val item: T, val branches: GreenBranching<T>) {
+    internal class Node<T> internal constructor (val item: T, val branches: GreenBranching<T>) {
         fun add(branch: GreenBranch<T>): Node<T> {
             return if (this.branches.contains(item)) {
                 this
@@ -50,6 +62,10 @@ internal class GreenBranch<T> constructor(
                     .replaceAt(branch, bIdx)
                     ?.let { Node(this.item, it) }
             }
+        }
+
+        fun listBranches() : List<GreenBranch<T>> {
+            return this.branches.listBranches()
         }
     }
 
@@ -71,7 +87,7 @@ internal class GreenBranch<T> constructor(
         return itemsString + "\n" + branchesString
     }
 
-    fun copy(
+    private fun copy(
         firstItem: T = this.firstItem,
         body: List<Node<T>> = this.body,
     ): GreenBranch<T> {
@@ -97,7 +113,7 @@ internal class GreenBranch<T> constructor(
         }
     }
 
-    fun getBranches(iIdx: ItemIdx): GreenBranching<T>? {
+    private fun getBranches(iIdx: ItemIdx): GreenBranching<T>? {
         return getNode(iIdx)?.branches
     }
 
@@ -194,5 +210,9 @@ internal class GreenBranching<T>(private val t: List<GreenBranch<T>> = emptyList
 
     fun listBranches(): List<GreenBranch<T>> {
         return t
+    }
+
+    fun size(): Int {
+        return t.size
     }
 }

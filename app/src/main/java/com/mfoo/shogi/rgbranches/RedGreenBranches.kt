@@ -80,7 +80,9 @@ class RedGreenBranches<T> private constructor(
 
     companion object {
         fun <T> fromTree(treeRoot: Tree.RootNode<T>): RedGreenBranches<T> {
-            return GreenRoot(treeRoot.children.map { traverse(it) })
+            return treeRoot.children
+                .map { traverse(it) }
+                .let(::GreenRoot)
                 .let { RedGreenBranches(it, Location.Root(RedRoot(it))) }
         }
     }
