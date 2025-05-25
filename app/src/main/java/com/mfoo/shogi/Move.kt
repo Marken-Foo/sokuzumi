@@ -1,6 +1,5 @@
 package com.mfoo.shogi
 
-import arrow.core.Either
 
 /**
  * Represents a single shogi move, implicitly dependent on some position.
@@ -31,7 +30,7 @@ sealed interface Move {
         override fun toString(): String {
             val promote = if (isPromotion) "+" else ""
             val capture = capturedKoma?.let { "x${it.komaType.name}" } ?: ""
-            return "${komaType.name}-${endSq}${promote} (${startSq}) (${capture})"
+            return "${coords(startSq)}-${coords(endSq)}${promote} ${komaType.name} (${capture})"
         }
     }
 
@@ -41,7 +40,7 @@ sealed interface Move {
         val komaType: KomaType,
     ) : Move {
         override fun toString(): String {
-            return "${komaType.name}*${sq}"
+            return "00*${coords(sq)} ${komaType.name}"
         }
     }
 
@@ -50,4 +49,8 @@ sealed interface Move {
             return endType.name
         }
     }
+}
+
+private fun coords(sq: Square): String {
+    return "${sq.col.t}${sq.row.t}"
 }

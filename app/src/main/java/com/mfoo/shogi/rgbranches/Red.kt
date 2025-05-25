@@ -32,22 +32,14 @@ internal class RedRoot<T>(private val green: GreenRoot<T>) : Red<T> {
                 ?.also { children.update(bIdx, it) }
     }
 
-    fun followPath(path: Path.Root): RedRoot<T> {
-        return this
+    fun followPath(path: Path.Empty): RedRoot<T> = this
+    fun followPath(path: Path.Full): RedBranch<T>? {
+        return goToBranch(path.rootIdx)?.followPath(path.getPartialPath())
     }
 
-    fun followPath(path: Path.T): RedBranch<T>? {
-        return goToBranch(path.rootIdx)
-            ?.followPath(path.getPartialPath())
-    }
+    override fun advance(): RedBranch<T>? = goToBranch(BranchIdx(0))
 
-    override fun advance(): RedBranch<T>? {
-        return goToBranch(BranchIdx(0))
-    }
-
-    fun findBranchIdx(item: T): BranchIdx? {
-        return green.findBranchIdx(item)
-    }
+    fun findBranchIdx(item: T): BranchIdx? = green.findBranchIdx(item)
 }
 
 /**
@@ -77,13 +69,16 @@ internal class RedBranch<T>(
         }
     }
 
+    private fun goToBranch(step: Step): RedBranch<T>? {
+        return goToBranch(step.iIdx, step.bIdx)
+    }
+
     fun followPath(path: PartialPath): RedBranch<T>? {
-        val (head, tail) = path.pop()
-        return if (head == null) {
+        val (nextStep, restPath) = path.pop()
+        return if (nextStep == null) {
             this
         } else {
-            val (iIdx, bIdx) = head
-            this.goToBranch(iIdx, bIdx)?.followPath(tail)
+            this.goToBranch(nextStep)?.followPath(restPath)
         }
     }
 
@@ -91,21 +86,13 @@ internal class RedBranch<T>(
         return this.green.findBranchIdx(item, iIdx)
     }
 
-    override fun advance(): RedBranch<T> {
-        return this
-    }
+    override fun advance(): RedBranch<T> = this
 
-    fun parent(): Red<T> {
-        return this.parent.red
-    }
+    fun parent(): Red<T> = this.parent.red
 
-    fun getAt(iIdx: ItemIdx): T? {
-        return this.green.getAt(iIdx)
-    }
+    fun getAt(iIdx: ItemIdx): T? = this.green.getAt(iIdx)
 
-    fun size(): Int {
-        return this.green.size()
-    }
+    fun size(): Int = this.green.size()
 }
 
 internal class RedCache<T>(private val t: MutableMap<ItemIdx, RedBranching<T>> = mutableMapOf()) {
@@ -138,12 +125,12 @@ internal class RedCache<T>(private val t: MutableMap<ItemIdx, RedBranching<T>> =
 
 internal class RedBranching<T>(private val t: MutableList<RedBranch<T>?> = mutableListOf()) {
     fun update(bIdx: BranchIdx, branch: RedBranch<T>) {
-        if (0 <= bIdx.t && bIdx.t < this.t.size) this.t[bIdx.t] = branch
+        if (0 <= bIdx.t && bIdx.t < this.t.size) {
+            this.t[bIdx.t] = branch
+        }
     }
 
-    fun get(bIdx: BranchIdx): RedBranch<T>? {
-        return t.getOrNull(bIdx.t)
-    }
+    fun get(bIdx: BranchIdx): RedBranch<T>? = t.getOrNull(bIdx.t)
 
     companion object {
         fun <T> fromGreenBranches(branches: List<GreenBranch<T>>): RedBranching<T> {

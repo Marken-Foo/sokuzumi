@@ -1,63 +1,63 @@
 package com.mfoo.shogi.rgbranches
 
 internal sealed interface Path {
-    fun advance(): T
+    fun advance(): Full
 
-    data object Root : Path {
-        override fun advance(): T {
-            return Path.T(BranchIdx(0), emptyList(), ItemIdx(0))
+    data object Empty : Path {
+        override fun advance(): Full {
+            return Full(BranchIdx(0), emptyList(), ItemIdx(0))
         }
 
-        fun goTo(bIdx: BranchIdx): T {
-            return Path.T(rootIdx = bIdx)
+        fun goTo(bIdx: BranchIdx): Full {
+            return Full(rootIdx = bIdx)
         }
     }
 
-    data class T(
+    data class Full(
         val rootIdx: BranchIdx = BranchIdx(0),
-        val choices: List<Pair<ItemIdx, BranchIdx>> = emptyList(),
-        val finalIdx: ItemIdx = ItemIdx(0),
+        val steps: List<Step> = emptyList(),
+        val endIdx: ItemIdx = ItemIdx(0),
     ) : Path {
-        fun goTo(idx: ItemIdx, branchIdx: BranchIdx): T {
+
+        fun goTo(iIdx: ItemIdx): Full = this.copy(endIdx = iIdx)
+        fun goTo(idx: ItemIdx, branchIdx: BranchIdx): Full {
             return this.copy(
-                choices = choices + (idx to branchIdx),
-                finalIdx = ItemIdx(0)
+                steps = steps + Step(idx, branchIdx),
+                endIdx = ItemIdx(0)
             )
         }
 
         fun getPartialPath(): PartialPath {
-            return PartialPath(choices, finalIdx)
+            return PartialPath(steps, endIdx)
         }
 
-        override fun advance(): T {
-            return this.copy(finalIdx = finalIdx.increment())
-        }
+        override fun advance(): Full = this.copy(endIdx = endIdx.increment())
 
         fun retract(): Path {
-            return if (finalIdx.t == 0) {
-                choices.lastOrNull()
-                    ?.let { (iIdx, _) -> T(rootIdx, choices.dropLast(1), iIdx) }
-                    ?: Root
+            return if (endIdx.t == 0) {
+                steps.lastOrNull()
+                    ?.let { (iIdx, _) ->
+                        Full(rootIdx, steps.dropLast(1), iIdx)
+                    }
+                    ?: Empty
             } else {
-                this.copy(finalIdx = finalIdx.decrement())
+                this.copy(endIdx = endIdx.decrement())
             }
         }
 
-        fun goTo(iIdx: ItemIdx): T {
-            return this.copy(finalIdx = iIdx)
+        fun addStep(step: Step, iIdx: ItemIdx = ItemIdx(0)): Full {
+            return this.copy(steps = steps + step, endIdx = iIdx)
         }
     }
 }
 
-internal data class PartialPath(
-    val choices: List<Pair<ItemIdx, BranchIdx>>,
-    val finalIdx: ItemIdx,
-) {
-    fun append(itemIdx: ItemIdx, branchIdx: BranchIdx): PartialPath {
-        return this.copy(choices = choices + (itemIdx to branchIdx))
-    }
+internal data class Step(val iIdx: ItemIdx, val bIdx: BranchIdx)
 
-    fun pop(): Pair<Pair<ItemIdx, BranchIdx>?, PartialPath> {
-        return Pair(choices.firstOrNull(), copy(choices = choices.drop(1)))
+internal data class PartialPath(
+    val steps: List<Step>,
+    val endIdx: ItemIdx,
+) {
+    fun pop(): Pair<Step?, PartialPath> {
+        return Pair(steps.firstOrNull(), copy(steps = steps.drop(1)))
     }
 }

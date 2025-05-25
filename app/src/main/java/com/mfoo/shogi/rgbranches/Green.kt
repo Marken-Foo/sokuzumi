@@ -2,14 +2,10 @@ package com.mfoo.shogi.rgbranches
 
 internal class GreenRoot<T> private constructor(private val children: GreenBranching<T>) {
     constructor(branches: List<GreenBranch<T>>) : this(
-        children = GreenBranching(
-            branches
-        )
+        children = GreenBranching(branches)
     )
 
-    override fun toString(): String {
-        return children.toString()
-    }
+    override fun toString(): String = children.toString()
 
     fun goToBranch(branchIdx: BranchIdx): GreenBranch<T>? {
         return children.getOrNull(branchIdx)
@@ -19,28 +15,25 @@ internal class GreenRoot<T> private constructor(private val children: GreenBranc
         return children.findBranchIdx(item)
     }
 
-    fun pathOfItem(item: T, path: Path): Path.T? {
-        return when (path) {
-            Path.Root -> {
-                findBranchIdx(item)?.let { Path.T(it, emptyList(), ItemIdx(0)) }
+    fun addItem(item: T, path: Path): Pair<GreenRoot<T>, Path.Full>? {
+        when (path) {
+            Path.Empty -> {
+                val newRoot = GreenRoot(children.add(item))
+                return newRoot.findBranchIdx(item)
+                    ?.let { Pair(newRoot, Path.Full(rootIdx = it)) }
             }
 
-            is Path.T -> {
-                goToBranch(path.rootIdx)
-                    ?.pathOfItem(item, path.getPartialPath())
-                    ?.let { Path.T(path.rootIdx, it.choices, it.finalIdx) }
-            }
-        }
-    }
-
-    fun addItem(item: T, path: Path): GreenRoot<T>? {
-        return when (path) {
-            Path.Root -> return GreenRoot(children.add(item))
-            is Path.T -> {
-                goToBranch(path.rootIdx)
+            is Path.Full -> {
+                val (newBranch, step, iIdx) = goToBranch(path.rootIdx)
                     ?.addItem(item, path.getPartialPath())
-                    ?.let { children.replaceAt(it, path.rootIdx) }
+                    ?: return null
+                val newRoot = newBranch
+                    .let { children.replaceAt(it, path.rootIdx) }
                     ?.let { GreenRoot(it) }
+                    ?: return null
+                val newPath =
+                    step?.let { path.addStep(it) } ?: path.copy(endIdx = iIdx)
+                return Pair(newRoot, newPath)
             }
         }
     }
@@ -68,10 +61,10 @@ internal class GreenBranch<T> private constructor(
         val branches: GreenBranching<T>,
     ) {
         fun add(branch: GreenBranch<T>): Node<T> {
-            return if (this.branches.contains(item)) {
+            return if (branches.contains(item)) {
                 this
             } else {
-                Node(this.item, this.branches.add(branch))
+                Node(item, branches.add(branch))
             }
         }
 
@@ -96,20 +89,16 @@ internal class GreenBranch<T> private constructor(
 
     override fun toString(): String {
         val items = listOf(firstItem) + body.map { it.item }
-        val indexedBranches = body
-            .mapIndexed { idx, node -> idx + 1 to node.branches.listBranches() }
-            .filter { (_, branches) -> branches.isNotEmpty() }
         val itemsString = (items
-            .mapIndexed { i, item -> i.toString() + item.toString() }
+            .mapIndexed { i, item -> "${(1 + i)}. ${item.toString()}" }
             .joinToString(separator = ", "))
-        val branchesString = indexedBranches
-            .map { (itemIdx, branches) ->
-                "Index $itemIdx alternative, " +
-                    branches
-                        .mapIndexed { i, branch -> "variation $i: $branch" }
-                        .joinToString("\n")
+        val branchesString = body
+            .mapIndexed { i, node -> (2 + i) to node.branches }
+            .filter { (_, branches) -> branches.size() > 0 }
+            .joinToString("") { (idx, branches) ->
+                "Index $idx alternative, $branches"
             }
-        return itemsString + "\n" + branchesString
+        return "Items: ${itemsString}\n${branchesString}"
     }
 
     private fun copy(
@@ -146,28 +135,45 @@ internal class GreenBranch<T> private constructor(
         return this.body.getOrNull(iIdx.decrement().t)
     }
 
-    fun addItem(item: T, path: PartialPath): GreenBranch<T>? {
-        val (head, tail) = path.pop()
-        if (head == null) {
-            val isAtBranchEnd = this.body.size == path.finalIdx.t
-            if (isAtBranchEnd) {
-                return copy(body = this.body + Node(item, GreenBranching()))
-            }
-            val node = getNode(path.finalIdx)
-                ?: return null
-            if (node.branches.contains(item)) {
-                return this
-            }
-            return node.add(GreenBranch(item))
-                .let { this.replaceAt(it, path.finalIdx) }
+    fun addItem(
+        item: T,
+        path: PartialPath,
+    ): Triple<GreenBranch<T>, Step?, ItemIdx>? {
+        val (nextStep, restPath) = path.pop()
+        if (nextStep == null) {
+            return addItem(item, path.endIdx)
         } else {
-            val (iIdx, bIdx) = head
-            val oldNode = getNode(iIdx)
+            val oldNode = getNode(nextStep.iIdx) ?: return null
+            val (newBranch, step, iIdx) = goToBranch(nextStep)
+                ?.addItem(item, restPath)
                 ?: return null
-            return goToBranch(iIdx, bIdx)
-                ?.addItem(item, tail)
-                ?.let { oldNode.replaceAt(it, bIdx) }
-                ?.let { this.replaceAt(it, iIdx) }
+            return oldNode.replaceAt(newBranch, nextStep.bIdx)
+                ?.let { this.replaceAt(it, nextStep.iIdx) }
+                ?.let { Triple(it, step, iIdx) }
+        }
+    }
+
+    private fun addItem(
+        item: T,
+        iIdx: ItemIdx,
+    ): Triple<GreenBranch<T>, Step?, ItemIdx>? {
+        val isAtBranchEnd = body.size == iIdx.t
+        if (isAtBranchEnd) {
+            val newBranch = copy(body = body + Node(item, GreenBranching()))
+            return Triple(newBranch, null, iIdx.increment())
+        }
+        val node = getNode(iIdx) ?: return null
+        val bIdx = node.findBranchIdx(item)
+        return if (bIdx != null) {
+            Triple(this, Step(iIdx, bIdx), ItemIdx(0))
+        } else {
+            val newBranch = node
+                .add(GreenBranch(item))
+                .let { this.replaceAt(it, iIdx) }
+                ?: return null
+            val newBIdx = newBranch.findBranchIdx(item, iIdx)
+                ?: return null
+            return Triple(newBranch, Step(iIdx, newBIdx), ItemIdx(0))
         }
     }
 
@@ -177,55 +183,23 @@ internal class GreenBranch<T> private constructor(
             ?.let { this.replaceAt(it, iIdx) }
     }
 
+    private fun goToBranch(step: Step): GreenBranch<T>? {
+        return goToBranch(step.iIdx, step.bIdx)
+    }
+
     fun goToBranch(itemIdx: ItemIdx, branchIdx: BranchIdx): GreenBranch<T>? {
         return getNode(itemIdx)?.branches?.getOrNull(branchIdx)
     }
 
-    fun pathOfItem(item: T, path: PartialPath): PartialPath? {
-        val (head, tail) = path.pop()
-        return if (head == null) {
-            pathOfItem(item, path.finalIdx)
-        } else {
-            val (iIdx, bIdx) = head
-            goToBranch(iIdx, bIdx)
-                ?.pathOfItem(item, tail)
-                ?.let { it.copy(choices = listOf(iIdx to bIdx) + it.choices) }
-        }
-    }
+    fun hasAsFirstItem(item: T): Boolean = firstItem == item
 
-    private fun pathOfItem(item: T, iIdx: ItemIdx): PartialPath? {
-        val isOnMainPath = item == getAt(iIdx.increment())
-        return if (isOnMainPath) {
-            PartialPath(emptyList(), iIdx.increment())
-        } else {
-            getNode(iIdx)
-                ?.branches
-                ?.findBranchIdx(item)
-                ?.let {
-                    PartialPath(listOf(iIdx to it), ItemIdx(0))
-                }
-        }
-    }
-
-    fun hasAsFirstItem(item: T): Boolean {
-        return firstItem == item
-    }
-
-    fun hasAt(item: T, iIdx: ItemIdx): Boolean {
-        return getNode(iIdx)
-            ?.let { it.item == item || it.branches.contains(item) }
-            ?: false
-    }
-
-    fun size(): Int {
-        return body.size
-    }
+    fun size(): Int = body.size
 }
 
 // Invariant: No two branches have the same first item
 internal class GreenBranching<T>(private val t: List<GreenBranch<T>> = emptyList()) {
     override fun toString(): String {
-        return t.toString()
+        return "-->\n${t.joinToString("") { it.toString() }}\n<--"
     }
 
     fun getOrNull(bIdx: BranchIdx): GreenBranch<T>? {
@@ -257,24 +231,11 @@ internal class GreenBranching<T>(private val t: List<GreenBranch<T>> = emptyList
         return if (contains(branch.firstItem)) {
             this
         } else {
-            t.replaceAt(branch, bIdx.t)
-                ?.let(::GreenBranching)
+            t.replaceAt(branch, bIdx.t)?.let(::GreenBranching)
         }
     }
 
-    fun isEmpty(): Boolean {
-        return t.isEmpty()
-    }
-
-    fun contains(item: T): Boolean {
-        return t.any { it.hasAsFirstItem(item) }
-    }
-
-    fun listBranches(): List<GreenBranch<T>> {
-        return t
-    }
-
-    fun size(): Int {
-        return t.size
-    }
+    fun contains(item: T): Boolean = t.any { it.hasAsFirstItem(item) }
+    fun listBranches(): List<GreenBranch<T>> = t
+    fun size(): Int = t.size
 }

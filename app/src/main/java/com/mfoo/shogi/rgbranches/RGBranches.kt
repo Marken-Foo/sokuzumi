@@ -30,8 +30,7 @@ sealed class RGBranches<T> private constructor(
     private val red: Red<T>,
 ) {
     fun add(item: T): RGBranches<T>? {
-        val newGreenRoot = greenRoot.addItem(item, currentPath) ?: return null
-        val newPath = greenRoot.pathOfItem(item, currentPath) ?: return null
+        val (newGreenRoot, newPath) = greenRoot.addItem(item, currentPath) ?: return null
         val newRed = RedRoot(newGreenRoot).followPath(newPath) ?: return null
         return NonRoot(newGreenRoot, newPath, newRed)
     }
@@ -56,7 +55,7 @@ sealed class RGBranches<T> private constructor(
 
     private class Root<T>(
         private val greenRoot: GreenRoot<T>,
-        private val currentPath: Path.Root,
+        private val currentPath: Path.Empty,
         private val red: RedRoot<T>,
     ) :
         RGBranches<T>(greenRoot, currentPath, red) {
@@ -77,7 +76,7 @@ sealed class RGBranches<T> private constructor(
 
         override fun goToEnd(): RGBranches<T> {
             val newRed = red.advance() ?: return this
-            val newPath = Path.T(finalIdx = ItemIdx(newRed.size()))
+            val newPath = Path.Full(endIdx = ItemIdx(newRed.size()))
             return NonRoot(greenRoot, newPath, newRed)
         }
 
@@ -92,11 +91,11 @@ sealed class RGBranches<T> private constructor(
 
     private class NonRoot<T>(
         private val greenRoot: GreenRoot<T>,
-        private val currentPath: Path.T,
+        private val currentPath: Path.Full,
         private val red: RedBranch<T>,
     ) : RGBranches<T>(greenRoot, currentPath, red) {
         override fun advanceIfPresent(item: T): NonRoot<T>? {
-            val iIdx = currentPath.finalIdx.increment()
+            val iIdx = currentPath.endIdx.increment()
             val bIdx = red.findBranchIdx(item, iIdx) ?: return null
             return red.goToBranch(iIdx, bIdx)
                 ?.let { NonRoot(greenRoot, currentPath.goTo(iIdx, bIdx), it) }
@@ -105,9 +104,9 @@ sealed class RGBranches<T> private constructor(
         override fun retract(): RGBranches<T> {
             val newPath = currentPath.retract()
             val newRed = red.parent()
-            return if (newPath is Path.T && newRed is RedBranch) {
+            return if (newPath is Path.Full && newRed is RedBranch) {
                 NonRoot(greenRoot, newPath, newRed)
-            } else if (newPath is Path.Root && newRed is RedRoot) {
+            } else if (newPath is Path.Empty && newRed is RedRoot) {
                 Root(greenRoot, newPath, newRed)
             } else {
                 throw IllegalStateException("Path and parent do not agree")
@@ -119,7 +118,7 @@ sealed class RGBranches<T> private constructor(
             while (newRed is RedBranch) {
                 newRed = newRed.parent()
             }
-            return Root(greenRoot, Path.Root, newRed as RedRoot<T>)
+            return Root(greenRoot, Path.Empty, newRed as RedRoot<T>)
         }
 
         override fun goToEnd(): NonRoot<T> {
@@ -131,12 +130,16 @@ sealed class RGBranches<T> private constructor(
         }
 
         override fun getCurrentItem(): T? {
-            return red.getAt(currentPath.finalIdx)
+            return red.getAt(currentPath.endIdx)
         }
 
         override fun isAtEnd(): Boolean {
-            return red.size() == currentPath.finalIdx.t
+            return red.size() == currentPath.endIdx.t
         }
+    }
+
+    override fun toString(): String {
+        return greenRoot.toString()
     }
 
     companion object {
@@ -144,7 +147,7 @@ sealed class RGBranches<T> private constructor(
             return treeRoot.children
                 .map { traverse(it) }
                 .let(::GreenRoot)
-                .let { Root(it, Path.Root, RedRoot(it)) }
+                .let { Root(it, Path.Empty, RedRoot(it)) }
         }
     }
 }
