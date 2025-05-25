@@ -36,7 +36,7 @@ sealed class RGBranches<T> private constructor(
         return NonRoot(newGreenRoot, newPath, newRed)
     }
 
-    private fun advance(): NonRoot<T>? {
+    fun advance(): RGBranches<T>? {
         return this.red
             .advance()
             ?.let { NonRoot(greenRoot, currentPath.advance(), it) }

@@ -4,11 +4,11 @@ import arrow.core.Either
 import com.mfoo.shogi.kif.KifAst
 import com.mfoo.shogi.kif.readKifFile
 import com.mfoo.shogi.kif.validateKif
-import com.mfoo.shogi.rgbranches.RedGreenBranches
+import com.mfoo.shogi.rgbranches.RGBranches
 
 
 class GameImpl private constructor(
-    private val gameData: RedGreenBranches<Move>,
+    private val gameData: RGBranches<Move>,
     val currentPosition: PositionImpl,
 ) : Game {
     override fun toString(): String {
@@ -46,7 +46,7 @@ class GameImpl private constructor(
     }
 
     override fun isAtVariationEnd(): Boolean {
-        return gameData.isAtLeaf()
+        return gameData.isAtEnd()
     }
 
     override fun getMainlineMove(): Move? {
@@ -61,7 +61,7 @@ class GameImpl private constructor(
         override fun fromKifAst(kifAst: KifAst.Game<KifAst.Move>): Game {
             return kifAst
                 .let(::validateKif)
-                .let { RedGreenBranches.fromTree(it.rootNode) }
+                .let { RGBranches.fromTree(it.rootNode) }
                 .let { GameImpl(it, kifAst.startPos as PositionImpl) }
         }
     }
