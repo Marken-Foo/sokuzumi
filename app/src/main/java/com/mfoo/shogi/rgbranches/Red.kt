@@ -2,11 +2,13 @@ package com.mfoo.shogi.rgbranches
 
 
 internal sealed interface RedParent<T> {
-    class Root<T>(val red: RedRoot<T>, branchIdx: BranchIdx) :
+    val red: Red<T>
+
+    class Root<T>(override val red: RedRoot<T>, branchIdx: BranchIdx) :
         RedParent<T>
 
     class Branch<T>(
-        val red: RedBranch<T>,
+        override val red: RedBranch<T>,
         val itemIdx: ItemIdx,
         branchIdx: BranchIdx,
     ) :
@@ -14,7 +16,9 @@ internal sealed interface RedParent<T> {
 }
 
 
-internal sealed interface Red<T>
+internal sealed interface Red<T> {
+    fun advance(): RedBranch<T>?
+}
 
 internal class RedRoot<T>(private val green: GreenRoot<T>) : Red<T> {
     private val children: RedBranching<T> = green
@@ -26,6 +30,23 @@ internal class RedRoot<T>(private val green: GreenRoot<T>) : Red<T> {
             ?: green.goToBranch(bIdx)
                 ?.let { RedBranch(it, RedParent.Root(this, bIdx)) }
                 ?.also { children.update(bIdx, it) }
+    }
+
+    fun followPath(path: Path.Root): RedRoot<T> {
+        return this
+    }
+
+    fun followPath(path: Path.T): RedBranch<T>? {
+        return goToBranch(path.rootIdx)
+            ?.followPath(path.getPartialPath())
+    }
+
+    override fun advance(): RedBranch<T>? {
+        return goToBranch(BranchIdx(0))
+    }
+
+    fun findBranchIdx(item: T): BranchIdx? {
+        return green.findBranchIdx(item)
     }
 }
 
@@ -56,8 +77,34 @@ internal class RedBranch<T>(
         }
     }
 
-    fun findBranchIdx(predicate: (branch: GreenBranch<T>) -> Boolean): BranchIdx? {
-        return null
+    fun followPath(path: PartialPath): RedBranch<T>? {
+        val (head, tail) = path.pop()
+        return if (head == null) {
+            this
+        } else {
+            val (iIdx, bIdx) = head
+            this.goToBranch(iIdx, bIdx)?.followPath(tail)
+        }
+    }
+
+    fun findBranchIdx(item: T, iIdx: ItemIdx): BranchIdx? {
+        return this.green.findBranchIdx(item, iIdx)
+    }
+
+    override fun advance(): RedBranch<T> {
+        return this
+    }
+
+    fun parent(): Red<T> {
+        return this.parent.red
+    }
+
+    fun getAt(iIdx: ItemIdx): T? {
+        return this.green.getAt(iIdx)
+    }
+
+    fun size(): Int {
+        return this.green.size()
     }
 }
 
