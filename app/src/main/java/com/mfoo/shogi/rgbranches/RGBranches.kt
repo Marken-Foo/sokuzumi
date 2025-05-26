@@ -30,7 +30,8 @@ sealed class RGBranches<T> private constructor(
     private val red: Red<T>,
 ) {
     fun add(item: T): RGBranches<T>? {
-        val (newGreenRoot, newPath) = greenRoot.addItem(item, currentPath) ?: return null
+        val (newGreenRoot, newPath) = greenRoot.addItem(item, currentPath)
+            ?: return null
         val newRed = RedRoot(newGreenRoot).followPath(newPath) ?: return null
         return NonRoot(newGreenRoot, newPath, newRed)
     }
@@ -143,6 +144,11 @@ sealed class RGBranches<T> private constructor(
     }
 
     companion object {
+        fun <T> empty(): RGBranches<T> {
+            return GreenRoot<T>(emptyList())
+                .let { Root(it, Path.Empty, RedRoot(it)) }
+        }
+
         fun <T> fromTree(treeRoot: Tree.RootNode<T>): RGBranches<T> {
             return treeRoot.children
                 .map { traverse(it) }

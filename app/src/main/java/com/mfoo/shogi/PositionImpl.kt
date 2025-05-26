@@ -31,14 +31,10 @@ data class PositionImpl(
     override fun setHandAmount(
         side: Side, komaType: KomaType, amount: Int,
     ): PositionImpl {
+        val newHand = getHandOfSide(side).setAmount(komaType, amount)
         return when (side) {
-            Side.SENTE -> copy(
-                senteHand = this.getHandOfSide(side).setAmount(komaType, amount)
-            )
-
-            Side.GOTE -> copy(
-                goteHand = this.getHandOfSide(side).setAmount(komaType, amount)
-            )
+            Side.SENTE -> copy(senteHand = newHand)
+            Side.GOTE -> copy(goteHand = newHand)
         }
     }
 
@@ -46,14 +42,10 @@ data class PositionImpl(
         side: Side,
         komaType: KomaType,
     ): PositionImpl {
+        val newHand = getHandOfSide(side).increment(komaType)
         return when (side) {
-            Side.SENTE -> copy(
-                senteHand = this.getHandOfSide(side).increment(komaType)
-            )
-
-            Side.GOTE -> copy(
-                goteHand = this.getHandOfSide(side).increment(komaType)
-            )
+            Side.SENTE -> copy(senteHand = newHand)
+            Side.GOTE -> copy(goteHand = newHand)
         }
     }
 
@@ -61,14 +53,10 @@ data class PositionImpl(
         side: Side,
         komaType: KomaType,
     ): PositionImpl {
+        val newHand = getHandOfSide(side).decrement(komaType)
         return when (side) {
-            Side.SENTE -> copy(
-                senteHand = this.getHandOfSide(side).decrement(komaType)
-            )
-
-            Side.GOTE -> copy(
-                goteHand = this.getHandOfSide(side).decrement(komaType)
-            )
+            Side.SENTE -> copy(senteHand = newHand)
+            Side.GOTE -> copy(goteHand = newHand)
         }
     }
 
@@ -85,10 +73,12 @@ data class PositionImpl(
     }
 
     override fun getAllKoma(): Map<Square, Koma> {
-        return Square.all().mapNotNull { sq ->
-            val koma = board.getKoma(sq).getOrNull()
-            if (koma != null) Pair(sq, koma) else null
-        }.toMap()
+        return Square.all()
+            .mapNotNull { sq ->
+                val koma = board.getKoma(sq).getOrNull()
+                if (koma != null) Pair(sq, koma) else null
+            }
+            .toMap()
     }
 
     override fun getSideToMove(): Side {
@@ -107,25 +97,63 @@ data class PositionImpl(
         return when (move) {
             is Move.GameEnd -> this
             is Move.Regular -> {
-                val capturedKoma = this.getKoma(move.endSq)
-                val finalKoma =
-                    if (move.isPromotion && move.komaType.isPromotable()) {
-                        Koma(move.side, move.komaType.promote())
-                    } else {
-                        Koma(move.side, move.komaType)
-                    }
-                this
-                    .toggleSideToMove()
-                    .removeKoma(move.startSq)
-                    .setKoma(move.endSq, finalKoma)
-                    .putCapturedKomaInHand(move.side, capturedKoma)
+                with(move) {
+                    val capturedKoma = getKoma(endSq)
+                    val finalKoma =
+                        if (isPromotion && komaType.isPromotable()) {
+                            Koma(side, komaType.promote())
+                        } else {
+                            Koma(side, komaType)
+                        }
+                    toggleSideToMove()
+                        .removeKoma(startSq)
+                        .setKoma(endSq, finalKoma)
+                        .putCapturedKomaInHand(side, capturedKoma)
+                }
             }
 
             is Move.Drop -> {
-                this
-                    .toggleSideToMove()
-                    .decrementHandAmount(move.side, move.komaType)
-                    .setKoma(move.sq, Koma(move.side, move.komaType))
+                with(move) {
+                    toggleSideToMove()
+                        .decrementHandAmount(side, komaType)
+                        .setKoma(sq, Koma(side, komaType))
+                }
+            }
+        }
+    }
+
+    fun undoMove(move: Move): PositionImpl {
+        return when (move) {
+            is Move.GameEnd -> this
+            is Move.Regular -> {
+                with(move) {
+                    val initialKoma = if (isPromotion) {
+                        Koma(side, komaType.demote())
+                    } else {
+                        Koma(side, komaType)
+                    }
+                    toggleSideToMove()
+                        .setKoma(startSq, initialKoma)
+                        .let {
+                            if (capturedKoma == null) {
+                                it
+                            } else {
+                                it.setKoma(endSq, capturedKoma)
+                                    .decrementHandAmount(
+                                        side,
+                                        capturedKoma.komaType
+                                    )
+                            }
+                        }
+                }
+            }
+
+            is Move.Drop -> {
+                with(move) {
+                    toggleSideToMove()
+                        .incrementHandAmount(side, komaType)
+                        .removeKoma(sq)
+                }
             }
         }
     }

@@ -9,20 +9,39 @@ import com.mfoo.shogi.rgbranches.RGBranches
 
 class GameImpl private constructor(
     private val gameData: RGBranches<Move>,
-    val currentPosition: PositionImpl,
+    private val initialPosition: PositionImpl,
+    val currentPosition: PositionImpl = initialPosition,
 ) : Game {
     override fun toString(): String {
         return gameData.toString()
     }
 
+    private fun updateAndApplyMove(
+        newData: RGBranches<Move>,
+        move: Move,
+    ): GameImpl {
+        return GameImpl(
+            gameData = newData,
+            initialPosition = initialPosition,
+            currentPosition = currentPosition.doMove(move)
+        )
+    }
+
     override fun addMove(move: Move): Either<GameError.IllegalMove, Game> {
-        TODO("Not yet implemented")
+        return if (isLegal(move, currentPosition)) {
+            gameData.add(move)
+                ?.let { updateAndApplyMove(it, move) }
+                ?.let { Either.Right(it) }
+                ?: Either.Left(GameError.IllegalMove) // Should be error in .add()
+        } else {
+            Either.Left(GameError.IllegalMove)
+        }
     }
 
     override fun advanceMove(move: Move): Either<GameError.NoSuchMove, Game> {
-        val newData = gameData.advanceIfPresent(move)
-            ?: return Either.Left(GameError.NoSuchMove)
-        return Either.Right(GameImpl(newData, currentPosition.doMove(move)))
+        return gameData.advanceIfPresent(move)
+            ?.let { Either.Right(updateAndApplyMove(it, move)) }
+            ?: Either.Left(GameError.NoSuchMove)
     }
 
     override fun advance(): Either<GameError.EndOfVariation, Game> {
@@ -30,15 +49,25 @@ class GameImpl private constructor(
             ?: return Either.Left(GameError.EndOfVariation)
         val move = newData.getCurrentItem()
             ?: return Either.Left(GameError.EndOfVariation)
-        return Either.Right(GameImpl(newData, currentPosition.doMove(move)))
+        return Either.Right(updateAndApplyMove(newData, move))
     }
 
     override fun retract(): Either<GameError.StartOfGame, Game> {
-        TODO("Not yet implemented")
+        val newData = gameData.retract()
+            ?: return Either.Left(GameError.StartOfGame)
+        val move = newData.getCurrentItem()
+            ?: return Either.Left(GameError.StartOfGame)
+        return Either.Right(
+            GameImpl(
+                newData,
+                initialPosition,
+                currentPosition.undoMove(move)
+            )
+        )
     }
 
     override fun goToStart(): Game {
-        TODO("Not yet implemented")
+        return GameImpl(gameData.goToStart(), initialPosition)
     }
 
     override fun goToVariationEnd(): Game {
@@ -55,7 +84,7 @@ class GameImpl private constructor(
 
     companion object : GameFactory {
         override fun empty(): Game {
-            TODO("Not yet implemented")
+            return GameImpl(RGBranches.empty(), PositionImpl.empty())
         }
 
         override fun fromKifAst(kifAst: KifAst.Game<KifAst.Move>): Game {
