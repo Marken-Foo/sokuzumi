@@ -86,6 +86,8 @@ internal class RedBranch<T>(
         return this.green.findBranchIdx(item, iIdx)
     }
 
+    fun getAll(): List<T> = green.getAll()
+
     override fun advance(): RedBranch<T> = this
 
     fun parent(): Red<T> = this.parent.red

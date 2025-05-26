@@ -127,6 +127,8 @@ internal class GreenBranch<T> private constructor(
         }
     }
 
+    fun getAll(): List<T> = listOf(firstItem) + body.map { it.item }
+
     fun findBranchIdx(item: T, iIdx: ItemIdx): BranchIdx? {
         return this.getNode(iIdx)?.findBranchIdx(item)
     }

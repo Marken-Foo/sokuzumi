@@ -52,6 +52,8 @@ sealed class RGBranches<T> private constructor(
         return this.advance()?.getCurrentItem()
     }
 
+    abstract fun getItemsToEnd(): List<T>
+
     abstract fun isAtEnd(): Boolean
 
     private class Root<T>(
@@ -83,6 +85,13 @@ sealed class RGBranches<T> private constructor(
 
         override fun getCurrentItem(): T? {
             return null
+        }
+
+        override fun getItemsToEnd(): List<T> {
+            return greenRoot
+                .goToBranch(BranchIdx(0))
+                ?.getAll()
+                ?: emptyList()
         }
 
         override fun isAtEnd(): Boolean {
@@ -130,13 +139,13 @@ sealed class RGBranches<T> private constructor(
             )
         }
 
-        override fun getCurrentItem(): T? {
-            return red.getAt(currentPath.endIdx)
+        override fun getCurrentItem(): T? = red.getAt(currentPath.endIdx)
+
+        override fun getItemsToEnd(): List<T> {
+            return red.getAll().drop(1 + currentPath.endIdx.t)
         }
 
-        override fun isAtEnd(): Boolean {
-            return red.size() == currentPath.endIdx.t
-        }
+        override fun isAtEnd(): Boolean = red.size() == currentPath.endIdx.t
     }
 
     override fun toString(): String {

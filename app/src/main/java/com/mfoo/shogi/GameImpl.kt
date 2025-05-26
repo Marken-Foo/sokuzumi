@@ -71,7 +71,11 @@ class GameImpl private constructor(
     }
 
     override fun goToVariationEnd(): Game {
-        TODO("Not yet implemented")
+        return GameImpl(
+            gameData = gameData.goToEnd(),
+            initialPosition = initialPosition,
+            currentPosition = gameData.getItemsToEnd()
+                .fold(currentPosition) { pos, move -> pos.doMove(move) })
     }
 
     override fun isAtVariationEnd(): Boolean {
