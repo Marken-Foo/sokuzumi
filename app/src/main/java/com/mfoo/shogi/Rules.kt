@@ -2,9 +2,10 @@ package com.mfoo.shogi
 
 
 fun canBePromotion(move: Move.Regular): Boolean {
-    return move.komaType.isPromotable() &&
-        (move.startSq.isInPromotionZone(move.side)
-            || move.endSq.isInPromotionZone(move.side))
+    return with(move) {
+        komaType.isPromotable()
+            && (startSq.isInPromotionZone(side) || endSq.isInPromotionZone(side))
+    }
 }
 
 private fun Square.isInPromotionZone(side: Side): Boolean {
@@ -31,11 +32,7 @@ private fun Square.isLastTwoRows(side: Side): Boolean {
 fun isLegal(move: Move, pos: PositionImpl): Boolean {
     return isValid(move, pos) && when (move) {
         is Move.GameEnd -> true
-        is Move.Regular -> !isInCheck(
-            move.side,
-            pos.doMove(move)
-        )
-
+        is Move.Regular -> !isInCheck(move.side, pos.doMove(move))
         is Move.Drop -> !isInCheck(move.side, pos.doMove(move))
     }
 }
@@ -129,10 +126,12 @@ private fun isRegularMoveValid(move: Move.Regular, pos: PositionImpl): Boolean {
         .getKoma(move.startSq)
         .fold({ null }, { it })
         ?: return false
-    return koma.komaType == move.komaType
-        && !(move.isPromotion && !canBePromotion(move))
-        && !(isDeadKoma(move.komaType, move.endSq, move.side) && !move.isPromotion)
-        && move.endSq in getValidDestinations(pos.getMailbox(), move.startSq)
+    return with(move) {
+        koma.komaType == komaType
+            && !(isPromotion && !canBePromotion(move))
+            && !(isDeadKoma(komaType, endSq, side) && !isPromotion)
+            && endSq in getValidDestinations(pos.getMailbox(), startSq)
+    }
 }
 
 private fun isSquareEmpty(pos: Position, sq: Square): Boolean {
