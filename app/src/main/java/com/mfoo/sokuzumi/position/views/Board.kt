@@ -11,19 +11,16 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mfoo.shogi.promote
 import com.mfoo.sokuzumi.position.BoardKoma
 import com.mfoo.sokuzumi.position.BoardState
-import com.mfoo.sokuzumi.position.PositionViewModel
 import com.mfoo.sokuzumi.position.SelectedElement
 import com.mfoo.sokuzumi.position.SquareXY
 
@@ -153,19 +150,3 @@ private fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier =
             onClick()
         }
     }
-
-@Preview(showBackground = true)
-@Composable
-fun BoardPreview() {
-    val vm = PositionViewModel()
-    val uiState = vm.uiState.collectAsState().value
-    Board(
-        uiState.board,
-        uiState.selection,
-        uiState.promotionPrompt,
-        onSquareClick = vm::onSquareClick,
-        onCancel = vm::cancelSelection,
-        onPromote = vm::onPromote,
-        onUnpromote = vm::onUnpromote,
-    )
-}

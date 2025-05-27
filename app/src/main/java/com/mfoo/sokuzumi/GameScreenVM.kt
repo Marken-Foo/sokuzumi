@@ -5,9 +5,9 @@ import com.mfoo.shogi.GameImpl
 import com.mfoo.shogi.PositionImpl
 import com.mfoo.sokuzumi.position.PositionVM
 
-class GameScreenVM(problemRepository: List<GameImpl>) {
+class GameScreenVM(problemRepository: List<Game>) {
     private var game: Game = problemRepository.first()
-    private var posVM: PositionVM =
+    val posVM: PositionVM =
         PositionVM(game.getPosition() as PositionImpl)
 
     fun toUiState(): GameScreenUiState {

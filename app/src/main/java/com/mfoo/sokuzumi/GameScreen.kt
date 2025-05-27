@@ -13,21 +13,31 @@ import com.mfoo.sokuzumi.game.views.MoveList
 import com.mfoo.sokuzumi.position.views.Position
 
 @Composable
-private fun GameScreen(gameScreenViewModel: GameScreenViewModel) {
+fun GameScreen(gameScreenViewModel: GameScreenViewModel) {
     val state = gameScreenViewModel.uiState.collectAsState()
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Position(
-                viewModel,
-                Modifier.padding(innerPadding)
-            )
-            MoveButtons(
-                goToStart = { /*TODO*/ },
-                goBackward = { /*TODO*/ },
-                goForward = { /*TODO*/ },
-                goToEnd = { /*TODO*/ },
-                modifier = Modifier
-            )
+            with(gameScreenViewModel.gameScreen) {
+                Position(
+                    state.value.posUi,
+                    cancelSelection = posVM::cancelSelection,
+                    onSquareClick = posVM::onSquareClick,
+                    onSenteHandClick = posVM::onSenteHandClick,
+                    onGoteHandClick = posVM::onGoteHandClick,
+                    onPromote = posVM::onPromote,
+                    onUnpromote = posVM::onUnpromote,
+                    Modifier.padding(innerPadding)
+                )
+            }
+            with(gameScreenViewModel) {
+                MoveButtons(
+                    goToStart = ::goToStart,
+                    goBackward = ::goBackward,
+                    goForward = ::goForward,
+                    goToEnd = ::goToEnd,
+                    modifier = Modifier
+                )
+            }
             MoveList(moves = listOf("P-76", "P-34", "R-68", "Bx88+", "Sx"))
         }
     }

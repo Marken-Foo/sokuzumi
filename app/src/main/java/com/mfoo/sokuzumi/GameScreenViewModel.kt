@@ -1,39 +1,40 @@
 package com.mfoo.sokuzumi
 
 import androidx.lifecycle.ViewModel
+import com.mfoo.shogi.Game
 import com.mfoo.shogi.GameImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class GameScreenViewModel() : ViewModel() {
-    private val _vm = GameScreenVM(listOf(GameImpl.empty() as GameImpl))
+class GameScreenViewModel(problems: List<Game>) : ViewModel() {
+    val gameScreen = GameScreenVM(problems)
     private val _uiState: MutableStateFlow<GameScreenUiState> =
-        MutableStateFlow(_vm.toUiState())
+        MutableStateFlow(gameScreen.toUiState())
     val uiState: StateFlow<GameScreenUiState> = _uiState.asStateFlow()
 
     private fun refresh() {
-        _uiState.update { _vm.toUiState() }
+        _uiState.update { gameScreen.toUiState() }
     }
 
     fun goToStart() {
-        _vm.goToStart()
+        gameScreen.goToStart()
         refresh()
     }
 
     fun goBackward() {
-        _vm.goBackward()
+        gameScreen.goBackward()
         refresh()
     }
 
     fun goForward() {
-        _vm.goForward()
+        gameScreen.goForward()
         refresh()
     }
 
     fun goToEnd() {
-        _vm.goToEnd()
+        gameScreen.goToEnd()
         refresh()
     }
 }
