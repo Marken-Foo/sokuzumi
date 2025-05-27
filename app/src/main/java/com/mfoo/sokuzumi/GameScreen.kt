@@ -38,7 +38,7 @@ fun GameScreen(gameScreenViewModel: GameScreenViewModel) {
                     modifier = Modifier
                 )
             }
-            MoveList(moves = listOf("P-76", "P-34", "R-68", "Bx88+", "Sx"))
+            MoveList(moves = state.value.moveList)
         }
     }
 }

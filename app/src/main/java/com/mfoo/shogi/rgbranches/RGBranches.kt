@@ -112,7 +112,7 @@ sealed class RGBranches<T> private constructor(
 
         override fun retract(): RGBranches<T> {
             val newPath = currentPath.retract()
-            val newRed = red.parent()
+            val newRed = if (currentPath.endIdx.t == 0) red.parent() else red
             return if (newPath is Path.Full && newRed is RedBranch) {
                 NonRoot(greenRoot, newPath, newRed)
             } else if (newPath is Path.Empty && newRed is RedRoot) {

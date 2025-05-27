@@ -26,6 +26,7 @@ interface Game {
     fun getPosition(): Position
     fun isAtVariationEnd(): Boolean
     fun getMainlineMove(): Move?
+    fun getMainline(): List<Move>
 }
 
 interface GameFactory {

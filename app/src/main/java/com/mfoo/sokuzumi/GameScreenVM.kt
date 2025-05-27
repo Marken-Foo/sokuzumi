@@ -12,7 +12,7 @@ class GameScreenVM(problemRepository: List<Game>) {
     fun toUiState(): GameScreenUiState {
         return GameScreenUiState(
             posUi = posVM.toPositionUiState(),
-            moveList = listOf("P-76", "P-34", "R-68", "Bx88+", "Sx")
+            moveList = game.getMainline().map { it.toString() }
         )
     }
 

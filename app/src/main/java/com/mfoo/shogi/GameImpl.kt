@@ -55,13 +55,13 @@ class GameImpl private constructor(
     override fun retract(): Either<GameError.StartOfGame, Game> {
         val newData = gameData.retract()
             ?: return Either.Left(GameError.StartOfGame)
-        val move = newData.getCurrentItem()
+        val move = gameData.getCurrentItem()
             ?: return Either.Left(GameError.StartOfGame)
         return Either.Right(
             GameImpl(
                 newData,
-                initialPosition,
-                currentPosition.undoMove(move)
+                initialPosition = initialPosition,
+                currentPosition = currentPosition.undoMove(move)
             )
         )
     }
@@ -86,6 +86,10 @@ class GameImpl private constructor(
 
     override fun getMainlineMove(): Move? {
         return gameData.getNextItem()
+    }
+
+    override fun getMainline(): List<Move> {
+        return gameData.goToStart().getItemsToEnd()
     }
 
     companion object : GameFactory {

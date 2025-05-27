@@ -133,11 +133,13 @@ data class PositionImpl(
                         Koma(side, komaType)
                     }
                     toggleSideToMove()
-                        .setKoma(startSq, initialKoma)
                         .let {
+                            println("tog")
                             if (capturedKoma == null) {
-                                it
+                                println("removing")
+                                it.removeKoma(endSq)
                             } else {
+                                println("adding piece")
                                 it.setKoma(endSq, capturedKoma)
                                     .decrementHandAmount(
                                         side,
@@ -145,6 +147,7 @@ data class PositionImpl(
                                     )
                             }
                         }
+                        .setKoma(startSq, initialKoma)
                 }
             }
 
