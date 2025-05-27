@@ -78,6 +78,8 @@ class GameImpl private constructor(
                 .fold(currentPosition) { pos, move -> pos.doMove(move) })
     }
 
+    override fun getPosition(): Position = currentPosition
+
     override fun isAtVariationEnd(): Boolean {
         return gameData.isAtEnd()
     }

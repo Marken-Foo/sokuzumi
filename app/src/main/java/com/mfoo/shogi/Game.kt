@@ -23,6 +23,7 @@ interface Game {
     fun goToVariationEnd(): Game
 
     // Queries
+    fun getPosition(): Position
     fun isAtVariationEnd(): Boolean
     fun getMainlineMove(): Move?
 }

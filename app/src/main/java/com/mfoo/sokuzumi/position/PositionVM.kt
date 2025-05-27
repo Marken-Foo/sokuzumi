@@ -26,6 +26,10 @@ class PositionVM(private var pos: PositionImpl) {
     private var selection: Selected = Selected.None
     private var pendingPromotion: PromotionInfo? = null
 
+    fun updatePosition(pos: PositionImpl) {
+        this.pos = pos
+    }
+
     private fun xYToSquare(x: Int, y: Int): Square {
         val numCols = 9
         return Square(Col(numCols - x), Row(y + 1))
