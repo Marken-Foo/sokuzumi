@@ -17,15 +17,15 @@ fun GameScreen(gameScreenViewModel: GameScreenViewModel) {
     val state = gameScreenViewModel.uiState.collectAsState()
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            with(gameScreenViewModel.gameScreen) {
+            with(gameScreenViewModel) {
                 Position(
                     state.value.posUi,
-                    cancelSelection = posVM::cancelSelection,
-                    onSquareClick = posVM::onSquareClick,
-                    onSenteHandClick = posVM::onSenteHandClick,
-                    onGoteHandClick = posVM::onGoteHandClick,
-                    onPromote = posVM::onPromote,
-                    onUnpromote = posVM::onUnpromote,
+                    cancelSelection = ::cancelSelection,
+                    onSquareClick = ::onSquareClick,
+                    onSenteHandClick = ::onSenteHandClick,
+                    onGoteHandClick = ::onGoteHandClick,
+                    onPromote = ::onPromote,
+                    onUnpromote = ::onUnpromote,
                     Modifier.padding(innerPadding)
                 )
             }

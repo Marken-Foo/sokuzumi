@@ -1,7 +1,6 @@
 package com.mfoo.sokuzumi
 
 import com.mfoo.shogi.Game
-import com.mfoo.shogi.GameImpl
 import com.mfoo.shogi.PositionImpl
 import com.mfoo.sokuzumi.position.PositionVM
 
@@ -17,23 +16,27 @@ class GameScreenVM(problemRepository: List<Game>) {
         )
     }
 
+    private fun updatePosition() {
+        posVM.updatePosition(game.getPosition() as PositionImpl)
+    }
+
     fun goForward() {
         game = game.advance().getOrNull() ?: return
-        posVM.updatePosition(game.getPosition() as PositionImpl)
+        updatePosition()
     }
 
     fun goBackward() {
         game = game.retract().getOrNull() ?: return
-        posVM.updatePosition(game.getPosition() as PositionImpl)
+        updatePosition()
     }
 
     fun goToStart() {
         game = game.goToStart()
-        posVM.updatePosition(game.getPosition() as PositionImpl)
+        updatePosition()
     }
 
     fun goToEnd() {
         game = game.goToVariationEnd()
-        posVM.updatePosition(game.getPosition() as PositionImpl)
+        updatePosition()
     }
 }
