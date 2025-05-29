@@ -195,7 +195,7 @@ internal class GreenBranch<T> private constructor(
 
     fun hasAsFirstItem(item: T): Boolean = firstItem == item
 
-    fun size(): Int = body.size
+    fun size(): Int = 1 + body.size
 }
 
 // Invariant: No two branches have the same first item
@@ -230,11 +230,7 @@ internal class GreenBranching<T>(private val t: List<GreenBranch<T>> = emptyList
     }
 
     fun replaceAt(branch: GreenBranch<T>, bIdx: BranchIdx): GreenBranching<T>? {
-        return if (contains(branch.firstItem)) {
-            this
-        } else {
-            t.replaceAt(branch, bIdx.t)?.let(::GreenBranching)
-        }
+        return t.replaceAt(branch, bIdx.t)?.let(::GreenBranching)
     }
 
     fun contains(item: T): Boolean = t.any { it.hasAsFirstItem(item) }

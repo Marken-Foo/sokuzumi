@@ -1,6 +1,8 @@
 package com.mfoo.shogi
 
 import arrow.core.Either
+import arrow.core.left
+import arrow.core.right
 import com.mfoo.shogi.kif.KifAst
 import com.mfoo.shogi.kif.readKifFile
 import com.mfoo.shogi.kif.validateKif
@@ -31,39 +33,38 @@ class GameImpl private constructor(
         return if (isLegal(move, currentPosition)) {
             gameData.add(move)
                 ?.let { updateAndApplyMove(it, move) }
-                ?.let { Either.Right(it) }
-                ?: Either.Left(GameError.IllegalMove) // Should be error in .add()
+                ?.right()
+                ?: GameError.IllegalMove.left() // Should be error in .add()
         } else {
-            Either.Left(GameError.IllegalMove)
+            GameError.IllegalMove.left()
         }
     }
 
     override fun advanceMove(move: Move): Either<GameError.NoSuchMove, Game> {
         return gameData.advanceIfPresent(move)
-            ?.let { Either.Right(updateAndApplyMove(it, move)) }
-            ?: Either.Left(GameError.NoSuchMove)
+            ?.let { updateAndApplyMove(it, move) }
+            ?.right()
+            ?: GameError.NoSuchMove.left()
     }
 
     override fun advance(): Either<GameError.EndOfVariation, Game> {
         val newData = gameData.advance()
-            ?: return Either.Left(GameError.EndOfVariation)
+            ?: return GameError.EndOfVariation.left()
         val move = newData.getCurrentItem()
-            ?: return Either.Left(GameError.EndOfVariation)
-        return Either.Right(updateAndApplyMove(newData, move))
+            ?: return GameError.EndOfVariation.left()
+        return updateAndApplyMove(newData, move).right()
     }
 
     override fun retract(): Either<GameError.StartOfGame, Game> {
         val newData = gameData.retract()
-            ?: return Either.Left(GameError.StartOfGame)
+            ?: return GameError.StartOfGame.left()
         val move = gameData.getCurrentItem()
-            ?: return Either.Left(GameError.StartOfGame)
-        return Either.Right(
-            GameImpl(
-                newData,
-                initialPosition = initialPosition,
-                currentPosition = currentPosition.undoMove(move)
-            )
-        )
+            ?: return GameError.StartOfGame.left()
+        return GameImpl(
+            newData,
+            initialPosition = initialPosition,
+            currentPosition = currentPosition.undoMove(move)
+        ).right()
     }
 
     override fun goToStart(): Game {
@@ -95,6 +96,10 @@ class GameImpl private constructor(
     companion object : GameFactory {
         override fun empty(): Game {
             return GameImpl(RGBranches.empty(), PositionImpl.empty())
+        }
+
+        override fun fromPos(pos: Position): Game {
+            return GameImpl(RGBranches.empty(), pos as PositionImpl)
         }
 
         override fun fromKifAst(kifAst: KifAst.Game<KifAst.Move>): Game {

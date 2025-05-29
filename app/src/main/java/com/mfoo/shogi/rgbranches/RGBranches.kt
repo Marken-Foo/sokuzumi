@@ -37,8 +37,10 @@ sealed class RGBranches<T> private constructor(
     }
 
     fun advance(): RGBranches<T>? {
-        return red.advance()
-            ?.let { NonRoot(greenRoot, currentPath.advance(), it) }
+        val newRed = red.advance() ?: return null
+        val newPath = currentPath.advance()
+        if (newRed.size() <= newPath.endIdx.t) return null
+        return NonRoot(greenRoot, newPath, newRed)
     }
 
     abstract fun advanceIfPresent(item: T): RGBranches<T>?
@@ -47,9 +49,7 @@ sealed class RGBranches<T> private constructor(
     abstract fun goToEnd(): RGBranches<T>
     abstract fun getCurrentItem(): T?
 
-    fun getNextItem(): T? {
-        return this.advance()?.getCurrentItem()
-    }
+    fun getNextItem(): T? = advance()?.getCurrentItem()
 
     abstract fun getItemsToEnd(): List<T>
 
@@ -78,7 +78,7 @@ sealed class RGBranches<T> private constructor(
 
         override fun goToEnd(): RGBranches<T> {
             val newRed = red.advance() ?: return this
-            val newPath = Path.Full(endIdx = ItemIdx(newRed.size()))
+            val newPath = Path.Full(endIdx = ItemIdx(newRed.size()).decrement())
             return NonRoot(greenRoot, newPath, newRed)
         }
 
@@ -133,7 +133,7 @@ sealed class RGBranches<T> private constructor(
         override fun goToEnd(): NonRoot<T> {
             return NonRoot(
                 greenRoot,
-                currentPath.goTo(ItemIdx(red.size())),
+                currentPath.goTo(ItemIdx(red.size()).decrement()),
                 red
             )
         }
@@ -144,11 +144,11 @@ sealed class RGBranches<T> private constructor(
             return red.getAll().drop(1 + currentPath.endIdx.t)
         }
 
-        override fun isAtEnd(): Boolean = red.size() == currentPath.endIdx.t
+        override fun isAtEnd(): Boolean = red.size() == 1 + currentPath.endIdx.t
     }
 
     override fun toString(): String {
-        return greenRoot.toString()
+        return "Path: ${currentPath}\nGreen: ${greenRoot}"
     }
 
     companion object {

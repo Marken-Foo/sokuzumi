@@ -18,6 +18,9 @@ internal sealed interface Path {
         val steps: List<Step> = emptyList(),
         val endIdx: ItemIdx = ItemIdx(0),
     ) : Path {
+        override fun toString(): String {
+            return "${rootIdx}, ${steps.joinToString { "i${it.iIdx}, b${it.bIdx}" }}, ${endIdx}"
+        }
 
         fun goTo(iIdx: ItemIdx): Full = this.copy(endIdx = iIdx)
         fun goTo(idx: ItemIdx, branchIdx: BranchIdx): Full {

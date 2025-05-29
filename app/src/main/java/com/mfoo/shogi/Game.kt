@@ -31,5 +31,6 @@ interface Game {
 
 interface GameFactory {
     fun empty(): Game
+    fun fromPos(pos: Position): Game
     fun fromKifAst(kifAst: KifAst.Game<KifAst.Move>): Game
 }
